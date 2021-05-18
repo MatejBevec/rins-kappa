@@ -1,7 +1,10 @@
 
 Packages:
-`src/world` - world launch, world file, meshes, arm  
+
+`src/world` - world launch, world file, meshes, arm 
+
 `src/navigation_stack` - amcl params, amcl launch, map
+
 `src/main` - glavni (navigacijski) node(i), ostali nodi so lahko posebej
 
 Launch:
