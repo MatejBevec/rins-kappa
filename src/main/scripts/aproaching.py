@@ -152,7 +152,7 @@ def approach(locx,locy,tip):
 	publishnavi=rospy.Publisher('/cmd_vel_mux/input/navi', Twist, queue_size=1)
 	
 	#dist nastavi kako dalec od objekta naj gleda
-	distaway=0.33
+	distaway=0.49
 	
 	modifier=1
 	if(tip == 'ring'):
@@ -178,7 +178,8 @@ def approach(locx,locy,tip):
 	        if(tip=='cylinder'):
 	            #TODO integracija premikanje roke
 	            print("roka")
-	        moveBack(0.1*modifier)	
+	        moveBack(0.1*modifier)
+	        break	
 	    else:
 	        print("goal",locx+ring1x[i]," ",locy+ring1y[i],"unreachable")
 	    
@@ -189,7 +190,7 @@ def approach(locx,locy,tip):
 	print("Done")
 	
 if __name__ == "__main__":
-    #approach(-0.5,0.0,cylinder) #neutral
-	#approach(-1.3,-0.55,'cylinder') #cylinder
+    #approach(-0.5,0.0,'cylinder') #neutral
+	approach(2.45,2.65,'cylinder') #cylinder
 	#approach(-1.33,0.25,'ring') #ring
-	approach(1.5,2.8,'obraz') #obraz
+	#approach(1.5,2.8,'obraz') #obraz
