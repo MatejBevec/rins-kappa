@@ -1,5 +1,7 @@
 <launch>
-  
+
+  <env name="ROSCONSOLE_CONFIG_FILE" value="$(find world)/launch/custom_console.conf"/>
+
   <!-- Map server -->
   <arg name="map_file" default="$(find navigation_stack)/maps/ok_map.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />

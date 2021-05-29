@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
 	tf2
 	tf2_geometry_msgs
 	message_generation
+	visualization_msgs
 )
 
 find_package(OpenCV)
@@ -20,4 +21,3 @@ catkin_package()
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 add_executable(map_goals src/map_goals.cpp)
 target_link_libraries(map_goals ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-

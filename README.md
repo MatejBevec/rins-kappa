@@ -6,6 +6,17 @@ Packages:
 
 Launch:
 1. `roslaunch world rins_world.launch`
+
 2. `roslaunch navigation_stack amcl_simulation.launch`
+
 3. `roslaunch turtlebot_rviz_launchers view_navigation.launch`
-4. [todo] Launch vseh ostalih node-ov.
+
+   [todo] Launch vseh ostalih node-ov.
+
+
+
+Cylinder detection:
+
+1. `roslaunch exercise6 find_cylinder.launch` - detection
+2. `rosrun main cylinder_filter.py` - filtering and color classification
+

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exercise6)/launch/custom_console.conf"/>
+
+    <node pkg="exercise6" type="cylinder_segmentation" name="cylinder_segmentation">s
+        <remap from="input" to="/camera/depth/points"/>
+    </node>
+
+</launch>
