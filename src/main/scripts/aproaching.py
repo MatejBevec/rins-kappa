@@ -185,7 +185,7 @@ def approach(locx,locy,tip):
 	
 	moveTo(0,0,190)	#nazaj na zacetek TODO: zakomentiraj to ko bo konc testiranja
 	
-		
+
 	print("Done")
 	
 if __name__ == "__main__":
