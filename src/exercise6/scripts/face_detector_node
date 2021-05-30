@@ -1,0 +1,114 @@
+#!/usr/bin/python3
+
+from typing import Set, Dict, List, Tuple
+
+import rospy
+from geometry_msgs.msg import PoseStamped, Vector3, Pose
+from visualization_msgs.msg import Marker, MarkerArray
+from functools import lru_cache
+import math
+from std_msgs.msg import ColorRGBA
+
+
+class FaceLocations:
+    def __init__(self):
+        self.previous_faces: int = 0
+        self.pf_mean: Tuple[float, float] = (0, 0)
+        self.markers_pub = rospy.Publisher('confirmed_faces', MarkerArray, queue_size=1000)
+
+        self.valid_faces = set()
+
+        self.waiting_to_approach = False
+        self.client = None
+
+    def publish_markers(self) -> None:
+        marker_array = MarkerArray()
+        id = 1
+        for face in self.valid_faces:
+            pose = Pose()
+            pose.position.x = face[0]
+            pose.position.y = face[1]
+            pose.position.z = 0.29
+            id += 1
+            marker = Marker()
+            marker.header.stamp = rospy.Time(0)
+            marker.header.frame_id = 'map'
+            marker.pose = pose
+            marker.type = Marker.CYLINDER
+            marker.action = Marker.ADD
+            marker.frame_locked = False
+            marker.lifetime = rospy.Duration.from_sec(40) if len(self.valid_faces) < 3 else rospy.Duration.from_sec(200)
+            marker.id = id
+            marker.scale = Vector3(0.3, 0.3, 0.3)
+            marker.color = ColorRGBA(0, 1, 1, 1)
+            marker_array.markers.append(marker)
+        self.markers_pub.publish(marker_array)
+
+    def check_if_new_markers(self, markers):
+        how_many = len(markers)
+        if self.waiting_to_approach:
+            self.previous_faces = how_many
+            return
+
+        newest = markers[-(how_many - self.previous_faces):]
+        newest = clean_markers(newest)
+        current_mean = get_mean_of_points(newest)
+
+        rospy.loginfo("Got markers! Lemme check 'em ;)")
+        if self.previous_faces:
+            if are_detections_close(self.pf_mean, current_mean, threshold=1.0):
+                already_done = False
+                for face in self.valid_faces:
+                    if are_detections_close(face, current_mean, threshold=1.0):
+                        already_done = True
+                        break
+                if already_done:
+                    rospy.loginfo("Found the same again!")
+                else:
+                    rospy.loginfo("Found a new face!")
+                    self.valid_faces.add(current_mean)
+                    self.waiting_to_approach = True
+                    print("Known faces:")
+                    for i in self.valid_faces:
+                        print(i)
+                    self.publish_markers()
+
+        self.previous_faces = how_many
+        self.pf_mean = current_mean
+
+
+def clean_markers(markers: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    return [point for point in markers if -50 < point[0] < 50]
+
+
+def are_detections_close(p1: Tuple[float, float], p2: Tuple[float, float], threshold: float = 1.0) -> bool:
+    return math.dist(p1, p2) <= threshold
+
+
+def get_mean_of_points(points: List[Tuple[float, float]]) -> Tuple[float, float]:
+    total = [0, 0]
+    for i in points:
+        total[0] += i[0]
+        total[1] += i[1]
+    return total[0] / len(points), total[1] / len(points)
+
+
+@lru_cache()
+def get_face_locations():
+    rospy.loginfo("Generated and cached the FL class :)")
+    fl = FaceLocations()
+    fl.faces = []
+    return fl
+
+
+def handle_received_face_marker(data):
+    fl = get_face_locations()
+    fl.check_if_new_markers([(i.pose.position.x, i.pose.position.y) for i in data.markers])
+
+
+if __name__ == '__main__':
+    rospy.init_node('face_detector_node')
+    get_face_locations.cache_clear()
+    fl = get_face_locations()
+    rospy.Subscriber('face_markers', MarkerArray, handle_received_face_marker)
+    rospy.spin()
