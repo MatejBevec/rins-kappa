@@ -118,7 +118,7 @@ class Approacher():
 		quat=tf.transformations.quaternion_from_euler(0,0,math.radians(deg))
 		return quat    
 		
-		
+	
 		
 	def moveTo(self,locx,locy,angle):
 
@@ -149,7 +149,30 @@ class Approacher():
 
 		return
 
-
+	def moveBetween(self,locx,locy,rotation=0):
+		check=[]
+		check=self.checkGoal(0.0,0.0,locx,locy)
+		dist=0.6
+		
+		if(check!=[]):
+			#ce lahko pride na prvo lokacijo rotation idk kam je treba bit obrjen
+			self.moveTo(locx,locy,rotation)
+			return
+		else:
+			ring1x=[0.0,0.0,dist,-dist]
+			ring1y=[dist,-dist,0.0,0.0]
+			rotations=[270,90,0,180]
+			for i in range(4):
+				check=self.checkGoal(0.0,0.0,locx+ring1x[i],locy+ring1y[i])
+				rotation
+				if(check!=[]):
+					self.moveTo(locx,locy,rotations[i])
+					print("2 faces are too close")
+					rospy.sleep(2)
+					return
+		return			
+			
+	
 	def approach(self,locx,locy,tip):
 
 		#dist nastavi kako dalec od objekta naj gleda
@@ -175,7 +198,7 @@ class Approacher():
 			    if(i%2==1):
 			        modifier=modifier*1.4	
 			    self.moveForward(0.1*modifier)
-			    rospy.sleep(2)
+			    rospy.sleep(1) #samo za test kasnej lahko damo vn
 			    if(tip=='cylinder'):
 			        #TODO integracija premikanje roke
 			        print("roka")
@@ -189,11 +212,81 @@ class Approacher():
 		
 
 		print("Done")
+		
+		
+		
+		
+		
+		
+		
+	def approachnew(self,locx,locy,tip):
+
+		#dist nastavi kako dalec od objekta naj gleda
+		distaway=0.49
+		
+		modifier=1
+		if(tip == 'ring'):
+			modifier=2
+		if(tip == 'obraz'):
+			modifier=0
+			distaway=0.49 #nism cist sure kk dalec stran od obraza mora bit da lepo zazna can be changed if needed
+		
+		anglereachable=[]
+		check=[]
+		#pogleda ce so reachable
+		x=0
+		y=0
+		numofangles=12#stevilo kolkkrat naj pogleda a.k.a. pogleda na vsakih 360/numofangles stopinj
+		for i in range(numofangles):
+			x=locx+distaway*math.cos(math.radians((i*(360/numofangles))))
+			y=locy+distaway*math.sin(math.radians((i*(360/numofangles))))
+			check=self.checkGoal(0.0,0.0,x,y)
+			if(check!=[]):
+				anglereachable.append(i*(360/numofangles))
+		
+		print(anglereachable)
+		avgangle=0
+		#ce ni pogledamo povprecni kot kamor ne more prit
+		if(anglereachable!=[]):
+			avgangle=sum(anglereachable)/len(anglereachable)
+		print(avgangle)
+		#just in case
+		avgangle=(avgangle)%360
+		#dejanski kot kam rabi it
+		print(avgangle)
+
+		
+		goalx=locx+distaway*math.cos(math.radians(avgangle))
+		goaly=locy+distaway*math.sin(math.radians(avgangle))
+		print(goalx,goaly)
+		self.moveTo(goalx,goaly,abs(avgangle-360)%360)
+		rospy.sleep(1)
+		
+		self.moveTo(0,0,190)	#nazaj na zacetek TODO: zakomentiraj to ko bo konc testiranja
+		
+
+		print("Done")
 	
 if __name__ == "__main__":
 	rospy.init_node("navnode2")
 	apr=Approacher()
-	apr.approach(-0.5,0.0,'cylinder')#neutral
-	apr.approach(2.45,2.65,'cylinder')#cylinder
-	apr.approach(-1.33,0.25,'ring') #ring
-	apr.approach(1.5,2.8,'obraz') #obraz
+	#apr.approach(-0.5,0.0,'cylinder')#neutral
+	#apr.approach(2.45,2.65,'cylinder')#cylinder
+	#apr.approach(-1.33,0.25,'ring') #ring
+	#apr.approach(1.5,2.8,'obraz') #obraz
+	#apr.moveBetween(1.15,1.3)
+	#apr.moveBetween(0.1,0.1)
+	#apr.approachnew(0.0,0.0,'ring')
+	#apr.approachnew(-1.8,-0.2,'cylinder')
+	#apr.approachnew(2.9,0.4,'cylinder')
+	#apr.approachnew(2.5,2.6,'cylinder')
+	#apr.approachnew(-0.7,-1.85,'cylinder')
+	#apr.approachnew(1.3,2.6,'obraz')
+	#apr.approachnew(4,-1.0,'obraz')
+	#apr.approachnew(-1.1,0.6,'ring')
+	#apr.approachnew(-0.2,1.35,'ring')
+	#apr.approachnew(2.9,-1.55,'ring')
+	#apr.approachnew(2.2,1.4,'ring')
+	apr.approachnew(0.5,0.34,'obraz')
+	#apr.approachnew(0.8,1.2,'obraz')
+	
