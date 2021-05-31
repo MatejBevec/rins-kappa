@@ -46,9 +46,6 @@ class FaceLocations:
 
     def check_if_new_markers(self, markers):
         how_many = len(markers)
-        if self.waiting_to_approach:
-            self.previous_faces = how_many
-            return
 
         newest = markers[-(how_many - self.previous_faces):]
         newest = clean_markers(newest)
@@ -67,7 +64,6 @@ class FaceLocations:
                 else:
                     rospy.loginfo("Found a new face!")
                     self.valid_faces.add(current_mean)
-                    self.waiting_to_approach = True
                     print("Known faces:")
                     for i in self.valid_faces:
                         print(i)
@@ -97,7 +93,6 @@ def get_mean_of_points(points: List[Tuple[float, float]]) -> Tuple[float, float]
 def get_face_locations():
     rospy.loginfo("Generated and cached the FL class :)")
     fl = FaceLocations()
-    fl.faces = []
     return fl
 
 
