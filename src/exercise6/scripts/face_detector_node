@@ -4,10 +4,15 @@ from typing import Set, Dict, List, Tuple
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Vector3, Pose
+from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker, MarkerArray
 from functools import lru_cache
 import math
 from std_msgs.msg import ColorRGBA
+from cv_bridge import CvBridge
+import cv2
+import numpy as np
+from skimage.measure import label
 
 
 class FaceLocations:
@@ -20,6 +25,11 @@ class FaceLocations:
 
         self.waiting_to_approach = False
         self.client = None
+
+        # An object we use for converting images between ROS format and OpenCV format
+        self.bridge = CvBridge()
+        self.latest_face = None
+        self.awaiting_image = False
 
     def publish_markers(self) -> None:
         marker_array = MarkerArray()
@@ -64,6 +74,7 @@ class FaceLocations:
                 else:
                     rospy.loginfo("Found a new face!")
                     self.valid_faces.add(current_mean)
+                    self.awaiting_image = True
                     print("Known faces:")
                     for i in self.valid_faces:
                         print(i)
@@ -71,6 +82,17 @@ class FaceLocations:
 
         self.previous_faces = how_many
         self.pf_mean = current_mean
+
+    def mask_check(self, latest_face):
+        dim1, dim2, _ = latest_face.shape
+        cutout = latest_face[dim1//2:int(dim1*0.95), :]
+        gray = cv2.cvtColor(cutout, cv2.COLOR_BGR2GRAY)
+        labels = label(gray)
+        size = np.max(np.bincount(labels.flat)[1:])
+        if size > 500:
+            print(f"MASK DETECTED ({size}). GOOD JOB, PERSON")
+        else:
+            print(f"NO MASK ({size}). STAY AWAY.")
 
 
 def clean_markers(markers: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
@@ -92,8 +114,7 @@ def get_mean_of_points(points: List[Tuple[float, float]]) -> Tuple[float, float]
 @lru_cache()
 def get_face_locations():
     rospy.loginfo("Generated and cached the FL class :)")
-    fl = FaceLocations()
-    return fl
+    return FaceLocations()
 
 
 def handle_received_face_marker(data):
@@ -101,9 +122,17 @@ def handle_received_face_marker(data):
     fl.check_if_new_markers([(i.pose.position.x, i.pose.position.y) for i in data.markers])
 
 
+def handle_received_face_image(data):
+    fl = get_face_locations()
+    if fl.awaiting_image:
+        fl.mask_check(fl.bridge.imgmsg_to_cv2(data, "bgr8"))
+        fl.awaiting_image = False
+
+
 if __name__ == '__main__':
     rospy.init_node('face_detector_node')
     get_face_locations.cache_clear()
-    fl = get_face_locations()
+    get_face_locations()
     rospy.Subscriber('face_markers', MarkerArray, handle_received_face_marker)
+    rospy.Subscriber('face_imgs', Image, handle_received_face_image)
     rospy.spin()
