@@ -47,9 +47,10 @@ class CylinderFilter():
 
     def hsv_hist(self, img, bins):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        h,bins = np.histogram(img_hsv[:,:,0].ravel(), bins, [0,256])
-        s,bins = np.histogram(img_hsv[:,:,1].ravel(), bins, [0,256])
-        v,bins = np.histogram(img_hsv[:,:,2].ravel(), bins, [0,256])
+        mask = img_hsv[:,:,1] > 30 # ONLY KEEP PIXELS THAT ARE NOT COMPLETELY DESATURATED
+        h,bins = np.histogram(img_hsv[:,:,0][mask].ravel(), bins, [0,256])
+        s,bins = np.histogram(img_hsv[:,:,1][mask].ravel(), bins, [0,256])
+        v,bins = np.histogram(img_hsv[:,:,2][mask].ravel(), bins, [0,256])
 
         return np.concatenate([h,s,v], axis=0)
 

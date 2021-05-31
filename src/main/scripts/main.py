@@ -12,7 +12,8 @@ from geometry_msgs.msg import PoseStamped, Point
 
 from cylinder_filter import CylinderFilter
 
-from aproaching_class import Approacher
+#from aproaching_class_old import Approacher
+from aproachingclass import Approacher
 from extend_retract_arm import Arm_Mover
 
 
@@ -37,8 +38,8 @@ class Agent():
 		#other
 		rospy.init_node("goals_mb_client")
 		self.mb_client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
-		#print("Waiting for move-base")
-		#self.mb_client.wait_for_server()
+		print("Waiting for move-base")
+		self.mb_client.wait_for_server()
 
 		self.preset_goals = [
 			(-0.3, -1,6),
@@ -59,7 +60,7 @@ class Agent():
 
 		self.test_cylinders = {}
 		p = Point()
-		p.x, p.y = -0.75, -1.85
+		p.x, p.y = -0.68, -2
 		self.test_cylinders["blue"] = p
 		p = Point()
 		p.x, p.y = 2.95, 0.4
@@ -68,7 +69,7 @@ class Agent():
 		p.x, p.y = 2.5, 2.6
 		self.test_cylinders["yellow"] = p
 		p = Point()
-		p.x, p.y = -1.8, 0
+		p.x, p.y = -1.8, -0.12
 		self.test_cylinders["red"] = p
 
 		self.test_faces = [
@@ -187,11 +188,11 @@ class Agent():
 			name_i, name_j = self.faces[i]["name"], self.faces[j]["name"]
 			print(f"Going to warn {name_i} and {name_j}")
 			mid_x, mid_y = self.face_pair_midpoint(i,j)
-			appr.approach(mid_x, mid_y, "cylinder")
+			appr.approachnew(mid_x, mid_y, "cylinder")
+			print(">>>>>\n")
+			print(f"\u001b[33m WARNING FOR {name_i} AND {name_j}, PLEASE RESPECT SOCIAL DISTANCE! \u001b[37m")
 			print("\n>>>>>")
-			print(f"WARNING FOR {name_i} AND {name_j}, PLEASE RESPECT SOCIAL DISTANCE!")
-			print("\n>>>>>")
-			appr.doMoveBack("cylinder")
+			#appr.doMoveBack("cylinder")
 
 	def test_approach_step(self):
 		appr = Approacher()
@@ -200,9 +201,23 @@ class Agent():
 		for color in self.cylinders:
 			print("approaching " + color + " cylinder")
 			pos = self.cylinders[color]
-			appr.approach(pos.x, pos.y, "cylinder")
+			appr.approachnew(pos.x, pos.y, "cylinder")
 			arm_mover.extend_retract()
-			appr.doMoveBack("cylinder")
+			appr.moveBackType("cylinder")
+
+	def test_approach_faces(self):
+		appr = Approacher()
+		arm_mover = Arm_Mover()
+
+		for face in self.faces:
+			print("approaching " + face["name"])
+			pos = face["position"]
+			appr.approachnew(pos.x, pos.y, "cylinder")
+			print(">>>>>\n")
+			print(f"\u001b[33m HELLO, {face['name']} \u001b[37m")
+			print("\n>>>>>")
+			arm_mover.extend_retract()
+			appr.moveBackType("cylinder")
 
 
 	# MAIN RUNTIME FUNCTION
@@ -230,4 +245,8 @@ if __name__ == "__main__":
 	a = Agent()
 	#a.runtime()
 	a.faces = a.test_faces
-	a.warning_step()
+	a.cylinders = a.test_cylinders
+	#a.explore_step()
+	#a.test_approach_step()
+	a.test_approach_faces()
+	#a.move_base_to(1.25,2)
