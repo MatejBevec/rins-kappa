@@ -253,9 +253,14 @@ class Approacher():
 
 
 
-
-
-
+	def getavgAngle(self,angles):
+		x=y=0
+		for i in angles:
+			x += math.cos(i)
+			y += math.sin(i)
+		
+		return math.atan2(y, x)	
+		
 
 	def approachnew(self,locx,locy,tip):
 
@@ -283,6 +288,11 @@ class Approacher():
 				anglereachable.append(i*(360/numofangles))
 
 		print(anglereachable)
+		#print("new angle",(self.getavgAngle(anglereachable)+360)%360)
+		
+			
+		
+		#old
 		avgangle=0
 		#ce ni pogledamo povprecni kot kamor ne more prit
 		if(anglereachable!=[]):
@@ -299,15 +309,22 @@ class Approacher():
 		print(goalx,goaly)
 		check=self.checkGoal(0.0,0.0,goalx,goaly)
 		if(check==[]):
-			newangle=min(anglereachable, key=lambda x:abs(x-avgangle))
-			avgangle=newangle
+			avgangle=self.getavgAngle(anglereachable)
+			avgangle=(avgangle)%360
 			goalx=locx+distaway*math.cos(math.radians(avgangle))
 			goaly=locy+distaway*math.sin(math.radians(avgangle))
-			print("nov kot",newangle)
+			check=self.checkGoal(0.0,0.0,goalx,goaly)
+			if (check==[]):
+				#se zadnji failsafe
+				newangle=min(myList, key=lambda x:abs(x-avgangle))
+				goalx=locx+distaway*math.cos(math.radians(newangle))
+				goaly=locy+distaway*math.sin(math.radians(newangle))
+				avgangle=newangle
+				#print("nov kot",newangle)
 		self.moveTo(goalx,goaly,abs(avgangle-360)%360)
 		rospy.sleep(1)
 	
-		#ko pride do cilja pogleda malo naokoli da najde qe
+		#ko pride do cilja pogleda malo naokoli da najde qr
 		if(tip=='obraz'):
 			self.rotateFor(facerotate)
 			self.rotateFor(facerotate*-2)
@@ -347,6 +364,6 @@ if __name__ == "__main__":
 	#apr.approachnew(-0.2,1.35,'ring')
 	#apr.approachnew(2.9,-1.55,'ring')
 	#apr.approachnew(2.2,1.4,'ring')
-	#apr.approachnew(0.5,0.34,'obraz')
+	apr.approachnew(0.5,0.34,'obraz')
 	apr.approachnew(0.8,1.2,'obraz')
 
