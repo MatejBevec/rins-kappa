@@ -187,7 +187,7 @@ class Approacher():
 		return
 
 	def moveBetween(self,locx,locy,rotation=0):
-		#TODO FIX NEKI
+		#FIX NEKI
 		check=[]
 		check=self.checkGoal(0.0,0.0,locx,locy)
 		dist=0.6
@@ -246,7 +246,7 @@ class Approacher():
 			    print("goal",locx+ring1x[i]," ",locy+ring1y[i],"unreachable")
 
 
-		#self.moveTo(0,0,190)	#nazaj na zacetek TODO: zakomentiraj to ko bo konc testiranja
+		#self.moveTo(0,0,190)	#nazaj na zacetekzakomentiraj to ko bo konc testiranja
 
 
 		print("Done")
@@ -260,6 +260,12 @@ class Approacher():
 			y += math.sin(i)
 		
 		return math.atan2(y, x)	
+	
+	def leftRight(self,deg):
+		self.rotateFor(facerotate)
+		self.rotateFor(facerotate*-2)
+		self.rotateFor(facerotate)
+		
 		
 
 	def approachnew(self,locx,locy,tip):
@@ -324,11 +330,10 @@ class Approacher():
 		self.moveTo(goalx,goaly,abs(avgangle-360)%360)
 		rospy.sleep(1)
 	
-		#ko pride do cilja pogleda malo naokoli da najde qr
-		if(tip=='obraz'):
-			self.rotateFor(facerotate)
-			self.rotateFor(facerotate*-2)
-			self.rotateFor(facerotate)
+		#ko pride do cilja pogleda malo naokoli da najde qr ce se ne bo klicalo iz kod drugot samo odzakomentiraj ta if
+		#if(tip=='obraz'):
+			#self.leftRight(facerotate)
+
 
 		#self.moveTo(0,0,190)	#nazaj na zacetek TODO: zakomentiraj to ko bo konc testiranja
 
