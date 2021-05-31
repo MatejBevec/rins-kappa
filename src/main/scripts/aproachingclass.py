@@ -72,6 +72,46 @@ class Approacher():
 		self.publishnavi.publish(msgTwist)
 		return
 
+	def rotateFor(self,relative_angle_deg,angular_speed=0.35):
+	#rotateFor zavrti robota za relative_angle_deg stopinj s hitrostjo angular_speed
+	#ce je kot negativen se vrti v obratno smer
+
+		isnegative=1;
+		if(relative_angle_deg>360):
+			relative_angle_deg=relative_angle_deg%360
+		if(relative_angle_deg<0):
+			relative_angle_deg=360-(relative_angle_deg%360)
+			isnegative=-1
+		
+		relative_angle=relative_angle_deg*2*math.pi/360
+		rospy.loginfo("Rotating for %f rad == %f deg",relative_angle,relative_angle_deg)
+			
+		msgTwist=Twist()
+			
+		msgTwist.linear.x=0
+		msgTwist.linear.y=0
+		msgTwist.linear.z=0
+		msgTwist.angular.x=0
+		msgTwist.angular.y=0
+		msgTwist.angular.z=angular_speed*isnegative
+			
+			
+		t0=rospy.Time.now().to_sec()
+		current_angle=0
+	  
+		while(current_angle<relative_angle):
+			self.publishnavi.publish(msgTwist)
+			t1=rospy.Time.now().to_sec()
+			current_angle=angular_speed*(t1-t0)
+				
+		rospy.loginfo("Rotation ended")
+			
+		msgTwist.angular.z=0
+		self.publishnavi.publish(msgTwist)
+			
+		return
+
+
 	def checkGoal(self,currentx,currenty,goalx,goaly):
 		# checkGoal preveri ce je goal reachable iz current pozicije
 		rospy.loginfo("Checking goal x: %f, y: %f.",goalx,goaly)
@@ -147,6 +187,7 @@ class Approacher():
 		return
 
 	def moveBetween(self,locx,locy,rotation=0):
+		#TODO FIX NEKI
 		check=[]
 		check=self.checkGoal(0.0,0.0,locx,locy)
 		dist=0.6
@@ -220,7 +261,7 @@ class Approacher():
 
 		#dist nastavi kako dalec od objekta naj gleda
 		distaway=0.49
-
+		facerotate=30
 		modifier=1
 		if(tip == 'ring'):
 			modifier=2
@@ -256,8 +297,21 @@ class Approacher():
 		goalx=locx+distaway*math.cos(math.radians(avgangle))
 		goaly=locy+distaway*math.sin(math.radians(avgangle))
 		print(goalx,goaly)
+		check=self.checkGoal(0.0,0.0,goalx,goaly)
+		if(check==[]):
+			newangle=min(anglereachable, key=lambda x:abs(x-avgangle))
+			avgangle=newangle
+			goalx=locx+distaway*math.cos(math.radians(avgangle))
+			goaly=locy+distaway*math.sin(math.radians(avgangle))
+			print("nov kot",newangle)
 		self.moveTo(goalx,goaly,abs(avgangle-360)%360)
 		rospy.sleep(1)
+	
+		#ko pride do cilja pogleda malo naokoli da najde qe
+		if(tip=='obraz'):
+			self.rotateFor(facerotate)
+			self.rotateFor(facerotate*-2)
+			self.rotateFor(facerotate)
 
 		#self.moveTo(0,0,190)	#nazaj na zacetek TODO: zakomentiraj to ko bo konc testiranja
 
@@ -293,5 +347,6 @@ if __name__ == "__main__":
 	#apr.approachnew(-0.2,1.35,'ring')
 	#apr.approachnew(2.9,-1.55,'ring')
 	#apr.approachnew(2.2,1.4,'ring')
-	apr.approachnew(0.5,0.34,'obraz')
-	#apr.approachnew(0.8,1.2,'obraz')
+	#apr.approachnew(0.5,0.34,'obraz')
+	apr.approachnew(0.8,1.2,'obraz')
+
