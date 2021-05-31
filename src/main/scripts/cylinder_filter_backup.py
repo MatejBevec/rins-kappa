@@ -34,8 +34,7 @@ class CylinderFilter():
         self.true_detections = [] #only verified detections
         #-> currently done with get_true_detections
 
-        if __name__ == "__main__":
-            rospy.init_node("cylinder_filter", anonymous=False)
+        rospy.init_node("cylinder_filter", anonymous=False)
         #self.detected_cylinder_sub = rospy.Subscriber("/detected_cylinder", Marker, self.on_detect) #temp
         self.detected_info_sub = rospy.Subscriber("/detected_cylinder_info", Detection, self.on_detect)
 
@@ -101,8 +100,8 @@ class CylinderFilter():
     def on_detect(self, data):
         now_sec = rospy.get_time()
         pos = data.position
-        #print("(%.2f, %.2f, %.2f) recieved at %.0f" % (pos.x, pos.y, pos.z, now_sec) )
-        #print(data.num_detections)
+        print("(%.2f, %.2f, %.2f) recieved at %.0f" % (pos.x, pos.y, pos.z, now_sec) )
+        print(data.num_detections)
 
         self.process_detection(data)
 
@@ -116,7 +115,7 @@ class CylinderFilter():
             # if close enough to a previous detection
             if dist < DIST_THR:
                 self.detections[i]["num_detects"] += 1
-                #print(".")
+                print(".")
                 if self.detections[i]["num_detects"] == NUM_THR:
                     # temp - MEGA BODGE, CLEANUP LATER (something like classify_detect((data1, data2, ..)))
                     hist, img = self.data_to_hist(data)
@@ -132,7 +131,7 @@ class CylinderFilter():
                     true_det = self.get_true_detections() # idk
                     self.print_positions(true_det)
                     self.pub_markers(true_det)
-                    #self.show_images(true_det)
+                    self.show_images(true_det)
                 return;
 
         # if detection is new
@@ -147,7 +146,7 @@ class CylinderFilter():
             "color": color
         }
         self.detections.append(new_detection)
-        #print("$")
+        print("$")
 
     # return only verified detections
     def get_true_detections(self):
@@ -192,17 +191,6 @@ class CylinderFilter():
 
         self.marker_pub.publish(markers)
 
-    def get_final_detections(self):
-        final_det = {}
-        true_det = self.get_true_detections()
-        #true_det = self.get_topn_detections(4)
-        for d in true_det:
-            final_det[d["color"]] = d["data"].position
-
-        return final_det
-
-    def spin(self):
-        rospy.spin()
 
 if __name__ == "__main__":
     cf = CylinderFilter()

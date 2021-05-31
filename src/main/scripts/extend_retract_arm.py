@@ -8,8 +8,6 @@ from std_msgs.msg import String
 class Arm_Mover():
     def __init__(self):
 
-        rospy.init_node('extend_retract_arm', anonymous=True)
-
         self.arm_movement_pub = rospy.Publisher('/turtlebot_arm/arm_controller/command', JointTrajectory, queue_size=1)
 
         # Pre-defined positions for the arm
@@ -30,6 +28,8 @@ class Arm_Mover():
         time.sleep(1)
 
 if __name__ == "__main__":
+
+    rospy.init_node('extend_retract_arm', anonymous=True)
 
     am = Arm_Mover()
 
