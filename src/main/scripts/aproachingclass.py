@@ -265,8 +265,23 @@ class Approacher():
 		self.rotateFor(facerotate)
 		self.rotateFor(facerotate*-2)
 		self.rotateFor(facerotate)
+		return
+	
+	def checkwall(self,x1,y1,x2,y2,numberofpoints):
+		m=(y2-y1)/(x2-x1)
+		b=y1-m*x1
+		print("enacba je y=",m,"*x+",b)
+		distx=x2-x1
+		disty=y2-y1
 		
-		
+		stepx=distx/numberofpoints
+		stepy=disty/numberofpoints
+		check=[]
+		for i in range(1,numberofpoints):
+			check=self.checkGoal(0.0,0.0,x1+i*stepx,y1+i*stepy)
+			if(check==[]):
+				return False
+		return True
 
 	def approachnew(self,locx,locy,tip):
 
@@ -369,6 +384,9 @@ if __name__ == "__main__":
 	#apr.approachnew(-0.2,1.35,'ring')
 	#apr.approachnew(2.9,-1.55,'ring')
 	#apr.approachnew(2.2,1.4,'ring')
-	apr.approachnew(0.5,0.34,'obraz')
-	apr.approachnew(0.8,1.2,'obraz')
+	#apr.approachnew(0.5,0.34,'obraz')
+	#apr.approachnew(0.8,1.2,'obraz')
+	print(apr.checkwall(0.5,0.34,0.8,1.2,5))
+	print(apr.checkwall(-0.7,1.25,0.2,-1.34,5))
+	
 
