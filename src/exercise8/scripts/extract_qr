@@ -10,7 +10,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from std_msgs.msg import ColorRGBA
 
-import urllib
+import urllib.request
 import pyzbar.pyzbar as pyzbar
 
 dictm = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
@@ -48,12 +48,34 @@ class QRExtractor:
     	#print(dataobj)
     	data=dataobj.data.decode('UTF-8')
     	#print(data)
-    	#print(data.endswith('.txt'))
     	if(data.endswith('.txt')):
     		print("povezava")
+    		dataset=[]
     		file=urllib.request.urlopen(data)
     		for line in file:
-    			print(line)
+    			info=line.decode('UTF-8')
+    			#print(info)
+    			spplitinfo=info.split(',')
+    			newdata={
+    				"age": float(spplitinfo[0].strip()),
+    				"exercise": float(spplitinfo[1].strip()),
+    				"vaccine": spplitinfo[2].strip()  
+    			}
+    			if "Blue" in spplitinfo[2].strip():
+    				newdata["vaccine"]="Blue"
+    			if "Black" in spplitinfo[2].strip():
+    				newdata["vaccine"]="Black"
+    			if "Red" in spplitinfo[2].strip():
+    				newdata["vaccine"]="Red"
+    			if "Yellow" in spplitinfo[2].strip():
+    				newdata["vaccine"]="Yellow"
+    			if "White" in spplitinfo[2].strip():
+    				newdata["vaccine"]="White"  		
+    			if "Green" in spplitinfo[2].strip():
+    				newdata["vaccine"]="Green"
+    			dataset.append(newdata)
+    						
+    		print(dataset)
     	else:
     		print("obraz")	
     		#print(data)
