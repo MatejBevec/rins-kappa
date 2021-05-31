@@ -16,6 +16,9 @@ from cylinder_filter import CylinderFilter
 from aproachingclass import Approacher
 from extend_retract_arm import Arm_Mover
 
+# move to main if there is time
+from extract_qr import QRExtractor
+
 
 # QUESTIONS:
 # How to turn off nodes after exploration?
@@ -74,7 +77,7 @@ class Agent():
 
 		self.test_faces = [
 			{"position": Point(1.35, 2.7, 0.5), "name": "bluemask"},
-			{"position": Point(0.74, 0.74, 0.5), "name": "gargamel"},
+			#{"position": Point(0.74, 0.74, 0.5), "name": "gargamel"},
 			{"position": Point(4.1, -1, 0.5), "name": "greenmask"},
 			{"position": Point(0.43, -0.26, 0.5), "name": "nomask_girl"}
 		]
@@ -178,9 +181,7 @@ class Agent():
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
 
-	def warning_step(self):
-		appr = Approacher()
-
+	def warning_step(self, appr):
 		self.get_unsafe_pairs()
 
 		for pair in self.unsafe_pairs:
@@ -194,9 +195,7 @@ class Agent():
 			print("\n>>>>>")
 			#appr.doMoveBack("cylinder")
 
-	def test_approach_step(self):
-		appr = Approacher()
-		arm_mover = Arm_Mover()
+	def test_approach_step(self, appr, arm_mover):
 
 		for color in self.cylinders:
 			print("approaching " + color + " cylinder")
@@ -205,14 +204,14 @@ class Agent():
 			arm_mover.extend_retract()
 			appr.moveBackType("cylinder")
 
-	def test_approach_faces(self):
-		appr = Approacher()
-		arm_mover = Arm_Mover()
+	def test_approach_faces(self, appr, arm_mover, qr_extr):
 
 		for face in self.faces:
 			print("approaching " + face["name"])
 			pos = face["position"]
 			appr.approachnew(pos.x, pos.y, "cylinder")
+			data = qr_extr.getLastDetected()
+			print(data)
 			print(">>>>>\n")
 			print(f"\u001b[33m HELLO, {face['name']} \u001b[37m")
 			print("\n>>>>>")
@@ -222,12 +221,14 @@ class Agent():
 
 	# MAIN RUNTIME FUNCTION
 	def runtime(self):
+		self.faces = self.test_faces
+		self.cylinders = self.test_cylinders
 
-		#self.explore_step()
-		#a.cylinders = a.test_cylinders
-		#print(a.cylinders)
+		appr = Approacher()
+		arm_mover = Arm_Mover()
+		qr_extr = QRExtractor()
 
-		self.warning_step()
+		self.test_approach_faces(appr, arm_mover, qr_extr)
 
 	def test(self):
 		print("gello world")
@@ -243,10 +244,4 @@ class Agent():
 
 if __name__ == "__main__":
 	a = Agent()
-	#a.runtime()
-	a.faces = a.test_faces
-	a.cylinders = a.test_cylinders
-	#a.explore_step()
-	#a.test_approach_step()
-	a.test_approach_faces()
-	#a.move_base_to(1.25,2)
+	a.runtime()
