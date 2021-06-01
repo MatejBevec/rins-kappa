@@ -63,10 +63,10 @@ class FaceLocations:
 
         rospy.loginfo("Got markers! Lemme check 'em ;)")
         if self.previous_faces:
-            if are_detections_close(self.pf_mean, current_mean, threshold=1.0):
+            if are_detections_close(self.pf_mean, current_mean):
                 already_done = False
                 for face in self.valid_faces:
-                    if are_detections_close(face, current_mean, threshold=1.0):
+                    if are_detections_close(face, current_mean):
                         already_done = True
                         break
                 if already_done:
@@ -90,7 +90,7 @@ class FaceLocations:
         labels = label(gray)
         size = np.max(np.bincount(labels.flat)[1:])
         if size > 500:
-            print(f"MASK DETECTED ({size}). GOOD JOB, PERSON")
+            print(f"MASK DETECTED ({size}). GOOD JOB, PERSON!")
         else:
             print(f"NO MASK ({size}). STAY AWAY.")
 
@@ -99,7 +99,7 @@ def clean_markers(markers: List[Tuple[float, float]]) -> List[Tuple[float, float
     return [point for point in markers if -50 < point[0] < 50]
 
 
-def are_detections_close(p1: Tuple[float, float], p2: Tuple[float, float], threshold: float = 1.0) -> bool:
+def are_detections_close(p1: Tuple[float, float], p2: Tuple[float, float], threshold: float = 0.75) -> bool:
     return math.dist(p1, p2) <= threshold
 
 
