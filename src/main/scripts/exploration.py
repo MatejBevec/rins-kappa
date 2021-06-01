@@ -51,7 +51,7 @@ def checkGoal(currentx,currenty,goalx,goaly):
 
     return planposes
 
-def rotateFor(relative_angle_deg,angular_speed=0.25):
+def rotateFor(relative_angle_deg,angular_speed=0.75):
     #rotateFor zavrti robota za relative_angle_deg stopinj s hitrostjo angular_speed
     #ce je kot negativen se vrti v obratno smer
 
@@ -170,6 +170,30 @@ def preslikaj(loc):
 	newloc=[newx,newy]
 	#print("new x:",newx,"new y",newy)
 	return newloc
+	
+def sortgoals(goals):
+	startx=0
+	starty=0
+	goalscpy=goals.copy()
+	newgoals=[]
+	#print(goals)
+	while(len(goalscpy)>2):
+		#find closest
+		minlen=999999
+		for i in goalscpy:
+			if(getDist(startx,starty,i[0],i[1])<minlen):
+				minlen=getDist(startx,starty,i[0],i[1])
+				current=i
+		#remove from cpy and add to new list
+		newgoals.append(current)
+		goalscpy.remove(current)
+		startx=current[0]
+		starty=current[1]
+	#zadna dva dodamo manually ce ne se zmede ko je samo left
+	newgoals.append(goalscpy.pop(1))
+	newgoals.append(goalscpy.pop(0))
+	#print("new goals:",newgoals)
+	return newgoals
 
 def explore():
 
@@ -214,13 +238,13 @@ def explore():
 	rospy.loginfo("got coordinates")
 	#print(trueLocations)
 
-	#TODO sortiraj da bojo sli do najblizje
-	
+	# sortiraj da bojo sli do najblizje
+	trueLocations=sortgoals(trueLocations)
 	#dejansko poslji movements
 	for i in trueLocations:
 		if checkGoal(0,0,i[0],i[1])!=[]:
 			moveTo(i[0],i[1])
-			rotateFor(345,0.65)
+			#rotateFor(345,1)
 		else:
 			print("something went wrong with: ",i)
 	
