@@ -56,12 +56,12 @@ class Agent():
 			(-0.77, 1.2),
 			(-1.25, 1.6),
 			(-1.4, 0),
-			(0,0)
+			(0, 0)
 			]
 
-		self.cylinders = {} # "color": position
-		self.rings = {} # "color": position
-		self.faces = [] # faces[i]["position"], faces[i]["img"]
+		self.cylinders = {}  # "color": position
+		self.rings = {}  # "color": position
+		self.faces = []  # faces[i]["position"], faces[i]["img"]
 
 		self.test_cylinders = {}
 		p = Point()
@@ -78,7 +78,7 @@ class Agent():
 		self.test_cylinders["red"] = p
 
 		self.test_rings = {
-			"green": Point(-1,0.67, 1),
+			"green": Point(-1, 0.67, 1),
 			"black": Point(-0.15, 1.5, 1),
 			"red": Point(2.3, 1.3, 1),
 			"blue": Point(2.8, -1.6, 1)
@@ -91,10 +91,10 @@ class Agent():
 			{"position": Point(0.43, -0.26, 0.5), "name": "nomask_girl"}
 		]
 
-		self.SAFE_DIST = 2 # safe distance for social distancing
-		self.unsafe_pairs = [] #(face_i, face_j) pairs of faces that are too close
+		self.SAFE_DIST = 2  # safe distance for social distancing
+		self.unsafe_pairs = []  #(face_i, face_j) pairs of faces that are too close
 
-		self.current_face = 0 # which face to greet next
+		self.current_face = 0  # which face to greet next
 		#self.faces_info = [None for face in self.faces] # information about faces from QR codes
 		#self.faces_info_guess = [] # info about faces from digits, conversation ...
 
@@ -152,7 +152,7 @@ class Agent():
 			"green": "\u001b[32m",
 			"yellow": "\u001b[33m",
 			"blue": "\u001b[34m",
-			"black": "\u001b[37m", #30
+			"black": "\u001b[37m",  #30
 			"white": "\u001b[37m"
 			}
 		print(">>>>>\n")
@@ -162,7 +162,6 @@ class Agent():
 	def kill_nodes(self, node_names):
 		for name in node_names:
 			os.system("rosnode kill " + name)
-
 
 	def move_base_to(self, x, y):
 		# send goal to move base and wait for arrival (blocking!)
@@ -208,14 +207,13 @@ class Agent():
 	# ---------------------------------------------------------
 
 	def explore_step(self, cylinder_f, face_ring_f):
-
 		self.explore_goals(self.preset_goals)
 
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
 
-		# self.faces = face_ring_f.get_final_face_detections()
-		# print(self.faces)
+		self.faces = face_ring_f.get_final_face_detections()
+		print(self.faces)
 		# self.rings = face_ring_f.get_final_ring_detections()
 		# print(self.rings)
 		# --> TODO: integrate
@@ -241,7 +239,6 @@ class Agent():
 			#appr.doMoveBack("cylinder")
 
 	def test_approach_step(self, appr, arm_mover):
-
 		for color in self.cylinders:
 			print("approaching " + color + " cylinder")
 			pos = self.cylinders[color]
@@ -249,9 +246,7 @@ class Agent():
 			arm_mover.extend_retract()
 			appr.moveBackType("cylinder")
 
-
 	def approach_one_face(self, i, appr, arm_mover, qr_extr):
-
 		face = self.faces[i]
 		print("Approaching " + face["name"] + ".")
 		pos = face["position"]
@@ -268,7 +263,6 @@ class Agent():
 		appr.moveBackType("cylinder")
 
 	def approach_one_cylinder(self, color, appr, arm_mover, qr_extr):
-
 		pos = self.cylinders[color]
 		print(f"Approaching {color} doctor.")
 		appr.approachnew(pos.x, pos.y, "cylinder")
@@ -278,7 +272,6 @@ class Agent():
 		appr.moveBackType("cylinder")
 
 	def approach_one_ring(self, color, appr, arm_mover):
-
 		pos = self.rings[color]
 		print(f"Approaching {color} vaccine.")
 		appr.approachnew(pos.x, pos.y, "cylinder")
@@ -298,11 +291,11 @@ class Agent():
 		cylinder_f = CylinderFilter()
 		face_ring_f = FaceRingWrapper()
 
-		#self.explore_step(cylinder_f, face_ring_f) # <------
+		#self.explore_step(cylinder_f, face_ring_f)  # <------
 
 		cylinder_f.disable()
 		face_ring_f.disable()
-		self.kill_nodes(["cylinder_segmentation", "face_localizer", "face_detector_node"]) # TODO: add ring detector
+		self.kill_nodes(["cylinder_segmentation", "face_localizer", "face_detector_node", "ring_detector"])
 
 		# APPROACH PHASE CLASSES
 		appr = Approacher()
@@ -310,27 +303,26 @@ class Agent():
 		qr_extr = QRExtractor()
 		#qr_extr.visualize = True
 
-		self.warning_step(appr) # <------
+		self.warning_step(appr)  # <------
 
 		for i in range(0, len(self.faces)):
-			self.approach_one_face(i, appr, arm_mover, qr_extr) # <------
+			self.approach_one_face(i, appr, arm_mover, qr_extr)  # <------
 
 			next_cyl = self.faces[i]["info"]["doctor"] if self.faces[i]["info"] else None
 			if not next_cyl:
 				print("Doctor not known, next face.")
 				continue;
 
-			self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr) # <------
+			self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr)  # <------
 
 			next_ring = self.faces[i]["info"]["vaccine"] if self.faces[i]["info"] else None
 			if not next_ring:
 				print("Vaccine not known, next face.")
 				continue;
 
-			self.approach_one_ring(next_ring, appr, arm_mover) # <------
+			self.approach_one_ring(next_ring, appr, arm_mover)  # <------
 
 		print("All done")
-
 
 	def test(self):
 		print("hello world")

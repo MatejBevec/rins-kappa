@@ -27,7 +27,7 @@ class FaceRingWrapper():
             print(f"Confirmed FACE detection at ({pos.x},{pos.y})")
             face = {
                 "position": pos,
-                "mask": False #TODO: CHECK IF MASK WAS DETECTED (pos.z ?)
+                "mask": pos.y < 0.3
             }
             self.faces.append(face)
         #self.faces = latest_faces

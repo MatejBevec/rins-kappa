@@ -1,12 +1,11 @@
 #!/usr/bin/python3
 
-from typing import Set, Dict, List, Tuple
+from typing import Set, List, Tuple
 
 import rospy
 from geometry_msgs.msg import PoseStamped, Vector3, Pose
 from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker, MarkerArray
-from functools import lru_cache
 import math
 from std_msgs.msg import ColorRGBA
 from cv_bridge import CvBridge
@@ -16,30 +15,66 @@ from skimage.measure import label
 
 
 class FaceLocations:
+    """
+    Node, capable of receiving a marker and image from face_localizer_dlib_new, checking whether the detection is
+    indeed a face and detecting a mask on the person's face.
+
+    Subscribers:
+        - face_markers    -> MarkerArray
+        - face_imgs       -> Image
+
+    Publisher:
+        - confirmed_faces <- MarkerArray
+    """
+
     def __init__(self):
-        self.previous_faces: int = 0
-        self.pf_mean: Tuple[float, float] = (0, 0)
+        rospy.init_node('face_detector_node')
+
+        # Publisher for the confirmed detections
         self.markers_pub = rospy.Publisher('confirmed_faces', MarkerArray, queue_size=1000)
 
-        self.waiting_to_approach = False
-        self.client = None
+        # Subscribers for marker arrays and images
+        self.face_markers_sub = rospy.Subscriber('face_markers', MarkerArray, self.handle_received_face_marker)
+        self.face_images_sub = rospy.Subscriber('face_imgs', Image, self.handle_received_face_image)
 
         # An object we use for converting images between ROS format and OpenCV format
         self.bridge = CvBridge()
+
+        # A flag, checking whether we really want to parse the face image for mask detection
         self.awaiting_image = False
 
+        # Structures, storing locations of first-time detections of a face and confirmed detections
         self.first_detections: Set[Tuple[float, float]] = set()
         self.proper_detections: List[Tuple[Tuple[float, float], bool]] = []
 
+    def handle_received_face_marker(self, data):
+        """
+        Handle new face markers from the face_localizer node.
+        """
+        self.check_if_new_markers([(i.pose.position.x, i.pose.position.y) for i in data.markers])
+
+    def handle_received_face_image(self, data):
+        """
+        Handle a new face image from the face_localizer node.
+        """
+        if self.awaiting_image:
+            self.awaiting_image = False
+            self.mask_check(fl.bridge.imgmsg_to_cv2(data, "bgr8"))
+
     def publish_markers(self) -> None:
+        """
+        Publish markers of currently confirmed faces to the topic.
+        """
         marker_array = MarkerArray()
-        id = 1
+        marker_id = 1
+        marker_lifetime = 40 if len(self.proper_detections) < 3 else 200
+
         for face, has_mask in self.proper_detections:
             pose = Pose()
             pose.position.x = face[0]
             pose.position.y = face[1]
-            pose.position.z = 0.29
-            id += 1
+            pose.position.z = 0.28 if has_mask else 0.32
+
             marker = Marker()
             marker.header.stamp = rospy.Time(0)
             marker.header.frame_id = 'map'
@@ -47,14 +82,18 @@ class FaceLocations:
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
             marker.frame_locked = False
-            marker.lifetime = rospy.Duration.from_sec(40) if len(self.proper_detections) < 3 else rospy.Duration.from_sec(200)
-            marker.id = id
+            marker.lifetime = rospy.Duration.from_sec(marker_lifetime)
+            marker.id = marker_id
             marker.scale = Vector3(0.3, 0.3, 0.3)
+
             if has_mask:
                 marker.color = ColorRGBA(0, 1, 0, 1)
             else:
                 marker.color = ColorRGBA(1, 0, 0, 1)
+
             marker_array.markers.append(marker)
+
+            marker_id += 1
         self.markers_pub.publish(marker_array)
 
     def check_if_detection_is_close_to_first_detection(
@@ -62,15 +101,15 @@ class FaceLocations:
         new_marker: Tuple[float, float]
     ) -> Tuple[bool, Tuple[float, float]]:
         """
-        Given a marker, returns True if some marker among the previous detections is sufficiently close. In this case,
+        Given a marker, return True if some marker among the previous detections is sufficiently close. In this case,
         the marker that is close is also removed from the set of previous detections.
-        Returns False, if no such marker is found.
+        Return False if no such marker is found.
         """
         closest_dist = float("inf")
         closest_item = None  # placeholder element
 
         for previous_detection in self.first_detections:
-            are_close, closeness = are_detections_close(previous_detection, new_marker)
+            are_close, closeness = FaceLocations.are_detections_close(previous_detection, new_marker)
             if are_close and closeness < closest_dist:
                 closest_dist = closeness
                 closest_item = previous_detection
@@ -80,15 +119,23 @@ class FaceLocations:
         return closest_dist < 10, closest_item
 
     def check_if_detections_is_close_to_confirmed_face(self, new_marker: Tuple[float, float]) -> bool:
+        """
+        Given a marker, check whether this marker is very close to a face that has already been confirmed.
+        Return True if the marker is close to a confirmed face.
+        Return False otherwise.
+        """
         for proper_detection in self.proper_detections:
-            are_close, _ = are_detections_close(proper_detection[0], new_marker)
+            are_close, _ = FaceLocations.are_detections_close(proper_detection[0], new_marker)
             if are_close:
                 return True
         return False
 
     def check_if_new_markers(self, markers):
+        """
+        Upon receiving a new marker from the localizer node, check the validity of the detection and act accordingly.
+        """
         newest = markers[-1]
-        newest = clean_markers([newest])
+        newest = FaceLocations.clean_markers([newest])
         if not newest:
             rospy.loginfo("Received an invalid marker, aborting.")
             return
@@ -115,60 +162,55 @@ class FaceLocations:
             self.first_detections.add(newest)
 
     def mask_check(self, latest_face):
+        """
+        Check whether or not a person is wearing a mask based on the received RBG image.
+        """
         if latest_face is None:
             return
 
         dim1, dim2, _ = latest_face.shape
-        cutout = latest_face[dim1//2:int(dim1*0.95), :]
+
+        # Only keep the bottom part of the image and convert it to grayscale
+        cutout = latest_face[dim1 // 2:int(dim1 * 0.95), :]
         gray = cv2.cvtColor(cutout, cv2.COLOR_BGR2GRAY)
+
+        # Label the largest connected component and determine the size of the largest component.
         labels = label(gray)
         size = np.max(np.bincount(labels.flat)[1:])
+
         if size > 500:
             print(f"MASK DETECTED ({size}). GOOD JOB, PERSON!")
             self.proper_detections[-1] = (self.proper_detections[-1][0], True)
-            self.publish_markers()
         else:
             print(f"NO MASK ({size}). STAY AWAY.")
 
+        self.publish_markers()
 
-def clean_markers(markers: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    return [point for point in markers if -50 < point[0] < 50]
+    @staticmethod
+    def clean_markers(markers: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
+        """
+        Clean obviously rogue detections.
+        """
+        return [point for point in markers if -50 < point[0] < 50]
 
-
-def are_detections_close(p1: Tuple[float, float], p2: Tuple[float, float], threshold: float = 0.75) -> Tuple[bool, float]:
-    return math.dist(p1, p2) <= threshold, math.dist(p1, p2)
-
-
-def get_mean_of_points(points: List[Tuple[float, float]]) -> Tuple[float, float]:
-    total = [0, 0]
-    for i in points:
-        total[0] += i[0]
-        total[1] += i[1]
-    return total[0] / len(points), total[1] / len(points)
-
-
-@lru_cache()
-def get_face_locations():
-    rospy.loginfo("Generated and cached the FL class :)")
-    return FaceLocations()
-
-
-def handle_received_face_marker(data):
-    fl = get_face_locations()
-    fl.check_if_new_markers([(i.pose.position.x, i.pose.position.y) for i in data.markers])
-
-
-def handle_received_face_image(data):
-    fl = get_face_locations()
-    if fl.awaiting_image:
-        fl.awaiting_image = False
-        fl.mask_check(fl.bridge.imgmsg_to_cv2(data, "bgr8"))
+    @staticmethod
+    def are_detections_close(
+        p1: Tuple[float, float],
+        p2: Tuple[float, float],
+        threshold: float = 0.75
+    ) -> Tuple[bool, float]:
+        """
+        Given two markers, return whether or not they're closer together than the specified threshold.
+        """
+        return math.dist(p1, p2) <= threshold, math.dist(p1, p2)
 
 
 if __name__ == '__main__':
-    rospy.init_node('face_detector_node')
-    get_face_locations.cache_clear()
-    get_face_locations()
-    rospy.Subscriber('face_markers', MarkerArray, handle_received_face_marker)
-    rospy.Subscriber('face_imgs', Image, handle_received_face_image)
+    fl = FaceLocations()
+
+    try:
+        rospy.spin()
+    except KeyboardInterrupt:
+        print("Shutting down")
+
     rospy.spin()
