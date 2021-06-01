@@ -63,6 +63,31 @@ class explorer():
 
 		return planposes
 
+	def moveBack(self,dist):
+		speed=-0.2
+
+		msgTwist=Twist()
+		msgTwist.linear.x=speed
+		msgTwist.linear.y=0
+		msgTwist.linear.z=0
+		msgTwist.angular.x=0
+		msgTwist.angular.y=0
+		msgTwist.angular.z=0
+
+		t0=rospy.Time.now().to_sec()
+		current_dist=0
+
+		while(current_dist<dist):
+		    self.publishnavi.publish(msgTwist)
+		    t1=rospy.Time.now().to_sec()
+		    current_dist=-1*speed*(t1-t0)
+
+		rospy.loginfo("movement ended")
+
+		msgTwist.linear.x=0
+		self.publishnavi.publish(msgTwist)
+		return
+
 	def rotateFor(self,relative_angle_deg,angular_speed=0.75):
 		#rotateFor zavrti robota za relative_angle_deg stopinj s hitrostjo angular_speed
 		#ce je kot negativen se vrti v obratno smer
@@ -135,6 +160,9 @@ class explorer():
 			print("Goal reached")
 		else:
 			print("Unable to reach goal, moving on")
+			moveBack(0.3)
+			return False
+			
 		
 		print("Reached",locx,"  ",locy)
 
@@ -174,7 +202,10 @@ class explorer():
 		#dejansko poslji movements
 		for i in self.points:
 			if self.checkGoal(0,0,i[0],i[1])!=[]:
-				self.moveTo(i[0],i[1])
+				test=self.moveTo(i[0],i[1])
+				if(test=False):
+					#try again
+					self.moveTo(i[0],i[1])
 				if(self.rotate):
 					rotateFor(345,1)
 			else:
@@ -186,7 +217,10 @@ class explorer():
 		
 	def goToGoal(self,i):
 		if self.checkGoal(0,0,i[0],i[1])!=[]:
-			self.moveTo(i[0],i[1])
+			test=self.moveTo(i[0],i[1])
+			if(test=False):
+				#try again
+				self.moveTo(i[0],i[1])
 			if(self.rotate):
 				rotateFor(345,1)
 				return True
