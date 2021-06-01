@@ -45,6 +45,9 @@ class QRExtractor:
 		self.lastDetected={}  # info from last face qr code
 		self.lastDataset=[]  # info from last cylinder qr code
 
+	def disable(self):
+		self.image_sub.unregister()
+
 	def parseColor(self, string):
 		str = string.strip().lower()
 		if "red" in str:

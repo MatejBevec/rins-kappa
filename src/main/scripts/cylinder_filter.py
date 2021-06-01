@@ -43,6 +43,9 @@ class CylinderFilter():
         self.marker_pub = rospy.Publisher('filtered_cylinder', MarkerArray, queue_size=5)
         self.marker_pub.publish(MarkerArray())
 
+    def disable(self):
+        self.detected_info_sub.unregister()
+
     # UTILITY
 
     def hsv_hist(self, img, bins):

@@ -11,6 +11,7 @@ from geometry_msgs.msg import PoseStamped, Point
 # IMPORTED CLASSES (SOME MIGHT NEED TO GO INTO SEPARATE NODES)
 
 from cylinder_filter import CylinderFilter
+from face_ring_wrapper import FaceRingWrapper
 
 #from aproaching_class_old import Approacher
 from aproachingclass import Approacher
@@ -96,6 +97,8 @@ class Agent():
 		#self.faces_info = [None for face in self.faces] # information about faces from QR codes
 		#self.faces_info_guess = [] # info about faces from digits, conversation ...
 
+		# ----------- HELPER CLASSES: initialized in runtime() ------------
+
 
 	def change_state_to(self, new_state):
 		# switches state and performs necessary operation for transition
@@ -148,7 +151,7 @@ class Agent():
 			"green": "\u001b[32m",
 			"yellow": "\u001b[33m",
 			"blue": "\u001b[34m",
-			"black": "\u001b[30m",
+			"black": "\u001b[37m", #30
 			"white": "\u001b[37m"
 			}
 		print(">>>>>\n")
@@ -199,13 +202,18 @@ class Agent():
 	# "STEP" FUNCTIONS - either this or state mgmt, we'll see
 	# ---------------------------------------------------------
 
-	def explore_step(self):
-		cylinder_f = CylinderFilter()
-		#cylinder_f.spin()
+	def explore_step(self, cylinder_f, face_ring_f):
+
 		self.explore_goals(self.preset_goals)
-		#self.populate_detections()
+
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
+
+		# self.faces = face_ring_f.get_final_face_detections()
+		# print(self.faces)
+		# self.rings = face_ring_f.get_final_ring_detections()
+		# print(self.rings)
+		# --> TODO: integrate
 
 	def warning_step(self, appr):
 		self.get_unsafe_pairs(appr)
@@ -281,32 +289,41 @@ class Agent():
 
 		# SHADOWS OFF IN GAZEBO!
 
+		# EXPLORE PHASE CLASSES
+		cylinder_f = CylinderFilter()
+		face_ring_f = FaceRingWrapper()
+
+		#self.explore_step(cylinder_f, face_ring_f) # <------
+
+		cylinder_f.disable()
+		face_ring_f.disable()
+
+		# APPROACH PHASE CLASSES
 		appr = Approacher()
 		arm_mover = Arm_Mover()
 		qr_extr = QRExtractor()
 		#qr_extr.visualize = True
 
-		#self.test_approach_faces(appr, arm_mover, qr_extr)
-
-		self.explore_step()
-		self.warning_step(appr)
+		self.warning_step(appr) # <------
 
 		for i in range(0, len(self.faces)):
-			self.approach_one_face(i, appr, arm_mover, qr_extr)
+			self.approach_one_face(i, appr, arm_mover, qr_extr) # <------
 
 			next_cyl = self.faces[i]["info"]["doctor"] if self.faces[i]["info"] else None
 			if not next_cyl:
 				print("Doctor not known, next face.")
 				continue;
 
-			self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr)
+			self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr) # <------
 
 			next_ring = self.faces[i]["info"]["vaccine"] if self.faces[i]["info"] else None
 			if not next_ring:
 				print("Vaccine not known, next face.")
 				continue;
 
-			self.approach_one_ring(next_ring, appr, arm_mover)
+			self.approach_one_ring(next_ring, appr, arm_mover) # <------
+
+		print("All done")
 
 
 	def test(self):
