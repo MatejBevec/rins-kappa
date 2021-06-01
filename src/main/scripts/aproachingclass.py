@@ -187,7 +187,7 @@ class Approacher():
 		return
 
 	def moveBetween(self,locx,locy,rotation=0):
-		#FIX NEKI
+		
 		check=[]
 		check=self.checkGoal(0.0,0.0,locx,locy)
 		dist=0.6
@@ -312,8 +312,6 @@ class Approacher():
 		#print("new angle",(self.getavgAngle(anglereachable)+360)%360)
 
 
-
-		#old
 		avgangle=0
 		#ce ni pogledamo povprecni kot kamor ne more prit
 		if(anglereachable!=[]):
@@ -345,6 +343,12 @@ class Approacher():
 		self.moveTo(goalx,goaly,abs(avgangle-360)%360)
 		rospy.sleep(1)
 
+		if(tip=='cylinder'):
+			self.moveForward(0.15)
+			self.moveBack(0.15)
+			
+			
+
 		#ko pride do cilja pogleda malo naokoli da najde qr ce se ne bo klicalo iz kod drugot samo odzakomentiraj ta if
 		#if(tip=='obraz'):
 			#self.leftRight(facerotate)
@@ -370,7 +374,6 @@ if __name__ == "__main__":
 	#apr.approach(-0.5,0.0,'cylinder')#neutral
 	#apr.approach(2.45,2.65,'cylinder')#cylinder
 	#apr.approach(-1.33,0.25,'ring') #ring
-	#apr.approach(1.5,2.8,'obraz') #obraz
 	#apr.moveBetween(1.15,1.3)
 	#apr.moveBetween(0.1,0.1)
 	#apr.approachnew(0.0,0.0,'ring')
@@ -378,13 +381,13 @@ if __name__ == "__main__":
 	#apr.approachnew(2.9,0.4,'cylinder')
 	#apr.approachnew(2.5,2.6,'cylinder')
 	#apr.approachnew(-0.7,-1.85,'cylinder')
-	#apr.approachnew(1.3,2.6,'obraz')
-	#apr.approachnew(4,-1.0,'obraz')
+	apr.approachnew(1.3,2.6,'obraz')
+	apr.approachnew(4,-1.0,'obraz')
 	#apr.approachnew(-1.1,0.6,'ring')
 	#apr.approachnew(-0.2,1.35,'ring')
 	#apr.approachnew(2.9,-1.55,'ring')
 	#apr.approachnew(2.2,1.4,'ring')
-	#apr.approachnew(0.5,0.34,'obraz')
-	#apr.approachnew(0.8,1.2,'obraz')
-	print(apr.checkwall(0.5,0.34,0.8,1.2,5))
-	print(apr.checkwall(-0.7,1.25,0.2,-1.34,5))
+	apr.approachnew(0.5,0.34,'obraz')
+	apr.approachnew(0.8,1.2,'obraz')
+	#print(apr.checkwall(0.5,0.34,0.8,1.2,5))
+	#print(apr.checkwall(-0.7,1.25,0.2,-1.34,5))
