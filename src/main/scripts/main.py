@@ -75,15 +75,26 @@ class Agent():
 		p.x, p.y = -1.8, -0.12
 		self.test_cylinders["red"] = p
 
+		self.test_rings = {
+			"green": Point(-1,0.67, 1),
+			"black": Point(-0.15, 1.5, 1),
+			"red": Point(2.3, 1.3, 1),
+			"blue": Point(2.8, -1.6, 1)
+		}
+
 		self.test_faces = [
 			{"position": Point(1.35, 2.7, 0.5), "name": "bluemask"},
-			#{"position": Point(0.74, 0.74, 0.5), "name": "gargamel"},
+			{"position": Point(0.74, 0.74, 0.5), "name": "gargamel"},
 			{"position": Point(4.1, -1, 0.5), "name": "greenmask"},
 			{"position": Point(0.43, -0.26, 0.5), "name": "nomask_girl"}
 		]
 
 		self.SAFE_DIST = 2 # safe distance for social distancing
 		self.unsafe_pairs = [] #(face_i, face_j) pairs of faces that are too close
+
+		self.current_face = 0 # which face to greet next
+		#self.faces_info = [None for face in self.faces] # information about faces from QR codes
+		#self.faces_info_guess = [] # info about faces from digits, conversation ...
 
 
 	def change_state_to(self, new_state):
@@ -102,20 +113,24 @@ class Agent():
 	def distance(self, x1, y1, x2, y2):
 		return math.hypot(x1-x2, y1-y2)
 
-	def get_unsafe_pairs(self):
+	def get_unsafe_pairs(self, appr):
 		if len(self.faces) == 0:
 			print("No faces detected yet.")
 			return
 
+		num_points = 5 #for checking wall between
 		unsafe_pairs = []
 		for i in range(0, len(self.faces)):
 			for j in range(i+1, len(self.faces)):
 				pos_a = self.faces[i]["position"]
 				pos_b = self.faces[j]["position"]
 				dist = self.distance(pos_a.x, pos_a.y, pos_b.x, pos_b.y)
-				#print(f"Distance between ({i}) and ({j}) is {dist}")
+				wall_between = not appr.checkwall(pos_a.x, pos_a.y, pos_b.x, pos_b.y, num_points)
+				print(f"Distance between ({i}) and ({j}) is {dist}, wall: {wall_between}")
+
 				if dist < self.SAFE_DIST:
-					unsafe_pairs.append((i, j))
+					unsafe_pairs.append((i, j, dist, wall_between))
+
 		self.unsafe_pairs = unsafe_pairs
 		return unsafe_pairs
 
@@ -127,7 +142,18 @@ class Agent():
 
 		return mid_x, mid_y
 
-
+	def print_message(self, color, string):
+		ansi = {
+			"red": "\u001b[31m",
+			"green": "\u001b[32m",
+			"yellow": "\u001b[33m",
+			"blue": "\u001b[34m",
+			"black": "\u001b[30m",
+			"white": "\u001b[37m"
+			}
+		print(">>>>>\n")
+		print(f"{ansi[color]} {string} \u001b[37m")
+		print("\n>>>>>")
 
 
 	def move_base_to(self, x, y):
@@ -182,17 +208,23 @@ class Agent():
 		print(self.cylinders)
 
 	def warning_step(self, appr):
-		self.get_unsafe_pairs()
+		self.get_unsafe_pairs(appr)
 
 		for pair in self.unsafe_pairs:
 			i,j = pair[0], pair[1]
 			name_i, name_j = self.faces[i]["name"], self.faces[j]["name"]
+			print(f"{name_i} and {name_j} are too close ({pair[2]:.1f}m).")
+
+			wall_between = pair[3]
+			if wall_between:
+				self.print_message("yellow", f"{name_i} AND {name_j} ARE SAFE - THERE IS A WALL BETWEEN THEM")
+				continue
+
 			print(f"Going to warn {name_i} and {name_j}")
 			mid_x, mid_y = self.face_pair_midpoint(i,j)
 			appr.approachnew(mid_x, mid_y, "cylinder")
-			print(">>>>>\n")
-			print(f"\u001b[33m WARNING FOR {name_i} AND {name_j}, PLEASE RESPECT SOCIAL DISTANCE! \u001b[37m")
-			print("\n>>>>>")
+
+			self.print_message("yellow", f"WARNING FOR {name_i} AND {name_j}, PLEASE RESPECT SOCIAL DISTANCE!")
 			#appr.doMoveBack("cylinder")
 
 	def test_approach_step(self, appr, arm_mover):
@@ -204,42 +236,81 @@ class Agent():
 			arm_mover.extend_retract()
 			appr.moveBackType("cylinder")
 
-	def test_approach_faces(self, appr, arm_mover, qr_extr):
 
-		for face in self.faces:
-			print("approaching " + face["name"])
-			pos = face["position"]
-			appr.approachnew(pos.x, pos.y, "cylinder")
-			data = qr_extr.getLastDetected()
-			print(data)
-			print(">>>>>\n")
-			print(f"\u001b[33m HELLO, {face['name']} \u001b[37m")
-			print("\n>>>>>")
-			arm_mover.extend_retract()
-			appr.moveBackType("cylinder")
+	def approach_one_face(self, i, appr, arm_mover, qr_extr):
+
+		face = self.faces[i]
+		print("Approaching " + face["name"] + ".")
+		pos = face["position"]
+		appr.approachnew(pos.x, pos.y, "cylinder")
+		appr.leftRight(20)
+		data = qr_extr.getLastDetected()
+		self.faces[i]["info"] = data
+
+		self.print_message("yellow", f"HELLO, {face['name']}")
+		print("Info about face:")
+		print(data)
+
+		arm_mover.extend_retract()
+		appr.moveBackType("cylinder")
+
+	def approach_one_cylinder(self, color, appr, arm_mover, qr_extr):
+
+		pos = self.cylinders[color]
+		print(f"Approaching {color} doctor.")
+		appr.approachnew(pos.x, pos.y, "cylinder")
+		#appr.leftRight(20)
+		#dataset = qr_extr.getLastDataset()
+		self.print_message(color, f"HELLO, {color} doctor.")
+		appr.moveBackType("cylinder")
+
+	def approach_one_ring(self, color, appr, arm_mover):
+
+		pos = self.rings[color]
+		print(f"Approaching {color} vaccine.")
+		appr.approachnew(pos.x, pos.y, "cylinder")
+		self.print_message("yellow", f"PICKING UP {color} vaccine.")
+		arm_mover.extend_retract()
 
 
 	# MAIN RUNTIME FUNCTION
 	def runtime(self):
 		self.faces = self.test_faces
 		self.cylinders = self.test_cylinders
+		self.rings = self.test_rings
+
+		# SHADOWS OFF IN GAZEBO!
 
 		appr = Approacher()
 		arm_mover = Arm_Mover()
 		qr_extr = QRExtractor()
+		#qr_extr.visualize = True
 
-		self.test_approach_faces(appr, arm_mover, qr_extr)
+		#self.test_approach_faces(appr, arm_mover, qr_extr)
+
+		self.explore_step()
+		self.warning_step(appr)
+
+		for i in range(0, len(self.faces)):
+			self.approach_one_face(i, appr, arm_mover, qr_extr)
+
+			next_cyl = self.faces[i]["info"]["doctor"] if self.faces[i]["info"] else None
+			if not next_cyl:
+				print("Doctor not known, next face.")
+				continue;
+
+			self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr)
+
+			next_ring = self.faces[i]["info"]["vaccine"] if self.faces[i]["info"] else None
+			if not next_ring:
+				print("Vaccine not known, next face.")
+				continue;
+
+			self.approach_one_ring(next_ring, appr, arm_mover)
+
 
 	def test(self):
-		print("gello world")
-
-		print(test_faces)
-		self.faces = test_faces
-		self.get_unsafe_pairs()
-		print(self.unsafe_pairs)
-		for pair in self.unsafe_pairs:
-			mid_x, mid_y = self.face_pair_midpoint(pair[0], pair[1])
-			print(mid_x, mid_y)
+		print("hello world")
 
 
 if __name__ == "__main__":

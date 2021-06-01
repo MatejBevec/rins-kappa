@@ -45,10 +45,6 @@ class QRExtractor:
 		self.lastDetected={}  # info from last face qr code
 		self.lastDataset=[]  # info from last cylinder qr code
 
-	def visualize(self):
-		#start visualizing detections (for debugging)
-		self.visualize = True
-
 	def parseColor(self, string):
 		str = string.strip().lower()
 		if "red" in str:
@@ -89,7 +85,6 @@ class QRExtractor:
 			#print("obraz")
 			#print(data)
 			info=data.split(",")
-			print(info)
 			datadict={
 				"hasMask": True if info[0]=='1' else False,
 				"age": int(info[1].strip()),
@@ -107,6 +102,11 @@ class QRExtractor:
 		if self.visualize:
 			print(self.lastDetected)
 		return self.lastDetected
+
+	def getLastDataset(self):
+		if self.visualize:
+			print(self.lastDataset)
+		return self.lastDataset
 
 
 	def image_callback(self,data):

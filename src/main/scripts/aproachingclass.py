@@ -82,33 +82,33 @@ class Approacher():
 		if(relative_angle_deg<0):
 			relative_angle_deg=360-(relative_angle_deg%360)
 			isnegative=-1
-		
+
 		relative_angle=relative_angle_deg*2*math.pi/360
 		rospy.loginfo("Rotating for %f rad == %f deg",relative_angle,relative_angle_deg)
-			
+
 		msgTwist=Twist()
-			
+
 		msgTwist.linear.x=0
 		msgTwist.linear.y=0
 		msgTwist.linear.z=0
 		msgTwist.angular.x=0
 		msgTwist.angular.y=0
 		msgTwist.angular.z=angular_speed*isnegative
-			
-			
+
+
 		t0=rospy.Time.now().to_sec()
 		current_angle=0
-	  
+
 		while(current_angle<relative_angle):
 			self.publishnavi.publish(msgTwist)
 			t1=rospy.Time.now().to_sec()
 			current_angle=angular_speed*(t1-t0)
-				
+
 		rospy.loginfo("Rotation ended")
-			
+
 		msgTwist.angular.z=0
 		self.publishnavi.publish(msgTwist)
-			
+
 		return
 
 
@@ -258,22 +258,22 @@ class Approacher():
 		for i in angles:
 			x += math.cos(i)
 			y += math.sin(i)
-		
-		return math.atan2(y, x)	
-	
+
+		return math.atan2(y, x)
+
 	def leftRight(self,deg):
-		self.rotateFor(facerotate)
-		self.rotateFor(facerotate*-2)
-		self.rotateFor(facerotate)
+		self.rotateFor(deg)
+		self.rotateFor(deg*-2)
+		self.rotateFor(deg)
 		return
-	
+
 	def checkwall(self,x1,y1,x2,y2,numberofpoints):
 		m=(y2-y1)/(x2-x1)
 		b=y1-m*x1
 		print("enacba je y=",m,"*x+",b)
 		distx=x2-x1
 		disty=y2-y1
-		
+
 		stepx=distx/numberofpoints
 		stepy=disty/numberofpoints
 		check=[]
@@ -310,9 +310,9 @@ class Approacher():
 
 		print(anglereachable)
 		#print("new angle",(self.getavgAngle(anglereachable)+360)%360)
-		
-			
-		
+
+
+
 		#old
 		avgangle=0
 		#ce ni pogledamo povprecni kot kamor ne more prit
@@ -344,7 +344,7 @@ class Approacher():
 				#print("nov kot",newangle)
 		self.moveTo(goalx,goaly,abs(avgangle-360)%360)
 		rospy.sleep(1)
-	
+
 		#ko pride do cilja pogleda malo naokoli da najde qr ce se ne bo klicalo iz kod drugot samo odzakomentiraj ta if
 		#if(tip=='obraz'):
 			#self.leftRight(facerotate)
@@ -388,5 +388,3 @@ if __name__ == "__main__":
 	#apr.approachnew(0.8,1.2,'obraz')
 	print(apr.checkwall(0.5,0.34,0.8,1.2,5))
 	print(apr.checkwall(-0.7,1.25,0.2,-1.34,5))
-	
-
