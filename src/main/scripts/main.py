@@ -4,6 +4,7 @@ import sys
 import math
 import rospy
 import actionlib
+import os
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import PoseStamped, Point
@@ -158,6 +159,10 @@ class Agent():
 		print(f"{ansi[color]} {string} \u001b[37m")
 		print("\n>>>>>")
 
+	def kill_nodes(self, node_names):
+		for name in node_names:
+			os.system("rosnode kill " + name)
+
 
 	def move_base_to(self, x, y):
 		# send goal to move base and wait for arrival (blocking!)
@@ -297,6 +302,7 @@ class Agent():
 
 		cylinder_f.disable()
 		face_ring_f.disable()
+		self.kill_nodes(["cylinder_segmentation", "face_localizer", "face_detector_node"]) # TODO: add ring detector
 
 		# APPROACH PHASE CLASSES
 		appr = Approacher()

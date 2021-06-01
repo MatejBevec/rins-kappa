@@ -33,7 +33,7 @@ import message_filters
 
 class face_localizer:
     def __init__(self):
-        rospy.init_node('face_localizer', anonymous=True)
+        rospy.init_node('face_localizer', anonymous=False)
 
         # An object we use for converting images between ROS format and OpenCV format
         self.bridge = CvBridge()
