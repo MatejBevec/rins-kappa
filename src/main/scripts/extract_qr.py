@@ -89,7 +89,7 @@ class QRExtractor:
 					"vaccine": self.parseColor( spplitinfo[2].strip() )
 				}
 				dataset.append(newdata)
-			print(dataset)
+			#print(dataset)
 			self.lastDataset = dataset
 			self.ageCyl=rospy.get_rostime().secs
 		else:
@@ -105,7 +105,7 @@ class QRExtractor:
 				"vaccine": self.parseColor( info[5].strip() )
 			}
 
-			print(datadict)
+			#print(datadict)
 			self.lastDetected=datadict
 			self.ageQR=rospy.get_rostime().secs
 		return
@@ -161,7 +161,7 @@ class QRExtractor:
 
 		if not ids is None:
 			if len(ids)==4:
-				print('4 Markers detected')
+				#print('4 Markers detected')
 			
 				for idx in ids:
 					# Calculate the center point of all markers
@@ -207,8 +207,9 @@ class QRExtractor:
 				config = '--psm 13 outputbase nobatch digits'
 					
 				# Visualize the image we are passing to Tesseract
-				cv2.imshow('Warped image',img_out)
-				cv2.waitKey(1)
+				if(self.visualize):
+					cv2.imshow('Warped image',img_out)
+					cv2.waitKey(1)
 			
 				# Extract text from image
 				text = pytesseract.image_to_string(img_out, config = config)
@@ -219,13 +220,14 @@ class QRExtractor:
 				if(text.isnumeric()):
 					self.lastNumber=int(text)
 					self.numberAge=rospy.get_rostime().secs
-					print(self.lastNumber)
-					print("time of detection:",self.numberAge)
+					#print(self.lastNumber)
+					#print("time of detection:",self.numberAge)
 				else:
-					print("not numeric",text)
-					print(text)
-					print(type(text))
-					print(len(text))
+					#print("not numeric",text)
+					#print(text)
+					#print(type(text))
+					pass
+				
 				# Remove any whitespaces from the left and right
 				text = text.strip()
 
@@ -233,15 +235,17 @@ class QRExtractor:
 				if len(text)==2:
 					x=int(text[0])
 					y=int(text[1])
-					print('The extracted datapoints are x=%d, y=%d' % (x,y))
+					#print('The extracted datapoints are x=%d, y=%d' % (x,y))
 				else:
-					print('The extracted text has is of length %d. Aborting processing' % len(text))
+					#print('The extracted text has is of length %d. Aborting processing' % len(text))
+					pass
 				
 			else:
-				print('The number of markers is not ok:',len(ids))
+				#print('The number of markers is not ok:',len(ids))
+				pass
 		else:
-			print('No markers found')
-		
+			#print('No markers found')
+			pass
 		
 		return
 		
@@ -283,8 +287,9 @@ class QRExtractor:
 				for j in range(0,n):
 					cv2.line(cv_image, hull[j], hull[ (j+1) % n], (0,255,0), 2)
 
-				cv2.imshow('Warped image',cv_image)
-				cv2.waitKey(1)
+				if(self.visualize):
+					cv2.imshow('Warped image',cv_image)
+					cv2.waitKey(1)
 
 		elif len(decodedObjects)==0:
 			#print("No QR code in the image")
@@ -304,7 +309,7 @@ def main(args):
 	while not rospy.is_shutdown():
 		rate.sleep()
 		temp=qre.getLastDataset()
-		print("temp",temp)
+		#print("temp",temp)
 
 
 	cv2.destroyAllWindows()
