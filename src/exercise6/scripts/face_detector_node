@@ -156,7 +156,7 @@ class FaceLocations:
             print("Known faces:")
             for i in self.proper_detections:
                 print(i[0])
-            self.publish_markers()
+            #self.publish_markers()
         else:
             rospy.loginfo("Face seen for the first time, awaiting confirmation...")
             self.first_detections.add(newest)
