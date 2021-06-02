@@ -237,8 +237,8 @@ class The_Ring:
                     float(np.nanmean(depth_image[x_min:x_max, y_min:y_max])),
                     depth_image_message.header.stamp
                 )
-            except tf2_ros.ExtrapolationException:
-
+            except tf2_ros.ExtrapolationException as e:
+                rospy.loginfo(f"Error with extrtrapolation: {e}")
 
             # DOBIMO BARVO
             img_path = f"{rospy.get_time()}.jpg"
