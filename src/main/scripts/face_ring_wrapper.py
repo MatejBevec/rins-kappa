@@ -26,7 +26,7 @@ class FaceRingWrapper:
         print("\n\n" + string)
         for i,d in enumerate(detections):
             pos = d["position"]
-            col = d["color"] if d["color"] else ""
+            col = d["color"] if ("color" in d) else ""
             print("(%.2f, %.2f, %.2f) %s" % (pos.x, pos.y, pos.z, col))
         print("---------------------------\n\n")
 

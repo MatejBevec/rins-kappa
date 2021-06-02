@@ -50,14 +50,14 @@ class Agent():
 		self.preset_goals = [
 			(-0.3, -1.6),
 			(2.25, -0.7),
-			(3.65, -1.23),
+			(3.40, -1.23),
 			(2.55, 1.60),
 			(1.12, -0.3),
 			(1.9, 2.1),
 			(-0.77, 1.2),
 			(-1.25, 1.6),
 			(-1.4, 0),
-			(-0.21, 0.71),
+			(-0.35, 0.71),
 			(0, 0)
 			]
 
@@ -218,12 +218,12 @@ class Agent():
 		self.explore_goals(self.preset_goals)
 
 		self.cylinders = cylinder_f.get_final_detections()
-		print(self.cylinders)
+		print("\nCylinders:\n", self.cylinders)
 
 		self.faces = face_ring_f.get_final_face_detections()
-		print(self.faces)
+		print("\nFaces:\n", self.faces)
 		self.rings = face_ring_f.get_final_ring_detections()
-		print(self.rings)
+		print("\nRings:\n", self.rings)
 		# --> TODO: integrate
 
 	def warning_step(self, appr):
@@ -376,7 +376,7 @@ class Agent():
 		cylinder_f = CylinderFilter()
 		face_ring_f = FaceRingWrapper()
 
-		#self.explore_step(cylinder_f, face_ring_f)  # <=============
+		self.explore_step(cylinder_f, face_ring_f)  # <=============
 
 		cylinder_f.disable()
 		face_ring_f.disable()
@@ -385,13 +385,15 @@ class Agent():
 		# BACKUP
 		num_obj = 4
 		if (not self.faces) or (len(self.faces) < num_obj):
-			self.print_message("RED", "FACE detections not complete, using hardcoded value for demonstration.")
-		elif (not self.cylinders) or (len(self.cylinders) < num_obj):
-			self.print_message("RED", "CYLINDER detections not complete, using hardcoded value for demonstration.")
-		elif (not self.rings) or (len(self.rings) < num_obj):
-			self.print_message("RED", "RING detections not complete, using hardcoded value for demonstration.")
-		else:
-			print("All detections complete.\n")
+			self.print_message("red", "FACE detections not complete, using hardcoded value for demonstration.")
+			self.faces = self.test_faces
+		if (not self.cylinders) or (len(self.cylinders) < num_obj):
+			self.print_message("red", "CYLINDER detections not complete, using hardcoded value for demonstration.")
+			self.cylinders = self.test_cylinders
+		if (not self.rings) or (len(self.rings) < num_obj):
+			self.print_message("red", "RING detections not complete, using hardcoded value for demonstration.")
+			self.rings = self.test_rings
+
 
 		# APPROACH PHASE CLASSES
 		appr = Approacher()
