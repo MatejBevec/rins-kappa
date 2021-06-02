@@ -8,7 +8,7 @@ import math
 from visualization_msgs.msg import Marker, MarkerArray
 
 
-class FaceRingWrapper():
+class FaceRingWrapper:
 
     def __init__(self):
         self.faces_sub = rospy.Subscriber('confirmed_faces', MarkerArray, self.on_confirmed_face)
@@ -33,7 +33,16 @@ class FaceRingWrapper():
         #self.faces = latest_faces
 
     def on_confirmed_ring(self, data):
-        #TODO: update self.rings
+        self.rings = []
+        for marker in data.markers:
+            pos = marker.pose.position
+            color = marker.color
+            print(f"Confirmed RING detection at ({pos.x},{pos.y})")
+            ring = {
+                "position": pos,
+                "color": color
+            }
+            self.rings.append(ring)
         pass
 
     def get_final_face_detections(self):
@@ -41,6 +50,7 @@ class FaceRingWrapper():
 
     def get_final_ring_detections(self):
         return self.rings
+
 
 if __name__ == "__main__":
     rospy.init_node("face_filter", anonymous=False)

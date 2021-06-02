@@ -111,7 +111,6 @@ class Agent():
 			pass
 			# [todo]: disable detection nodes, start approaching
 
-
 		self.state = new_state
 
 	def distance(self, x1, y1, x2, y2):
@@ -122,7 +121,7 @@ class Agent():
 			print("No faces detected yet.")
 			return
 
-		num_points = 5 #for checking wall between
+		num_points = 5  #for checking wall between
 		unsafe_pairs = []
 		for i in range(0, len(self.faces)):
 			for j in range(i+1, len(self.faces)):
@@ -212,10 +211,10 @@ class Agent():
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
 
-		#self.faces = face_ring_f.get_final_face_detections()
-		#print(self.faces)
-		# self.rings = face_ring_f.get_final_ring_detections()
-		# print(self.rings)
+		self.faces = face_ring_f.get_final_face_detections()
+		print(self.faces)
+		self.rings = face_ring_f.get_final_ring_detections()
+		print(self.rings)
 		# --> TODO: integrate
 
 	def warning_step(self, appr):
