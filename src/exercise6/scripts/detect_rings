@@ -76,7 +76,7 @@ class The_Ring:
     def are_detections_close(
         p1: Tuple[float, float, float],
         p2: Tuple[float, float, float],
-        threshold: float = 0.35
+        threshold: float = 0.25
     ) -> Tuple[bool, float]:
         """
         Given two markers, return whether or not they're closer together than the specified threshold.
@@ -249,7 +249,7 @@ class The_Ring:
             # depth_image = self.bridge.imgmsg_to_cv2(depth_img, "32FC1")
             center = cv_image[(x_max-+x_min)//2, (y_max + y_min)//2, :]
             # print(center, np.sum(center) / 3)
-            if not (160 < np.sum(center) / 3 < 185):
+            if not (160 < np.sum(center) / 3 < 210):
                 rospy.loginfo("Fake loop :(")
                 continue
 
