@@ -23,7 +23,7 @@ class Approacher():
 
 	def moveBack(self,dist):
 		speed=-0.2
-
+		
 		msgTwist=Twist()
 		msgTwist.linear.x=speed
 		msgTwist.linear.y=0
@@ -344,7 +344,7 @@ class Approacher():
 
 		if(tip=='cylinder'):
 			self.moveForward(0.15)
-			self.moveBack(0.15)
+			
 
 
 
@@ -365,7 +365,7 @@ class Approacher():
 		if(tip == 'obraz'):
 			modifier=0
 
-		self.moveBack(0.1*modifier)
+		self.moveBack(0.15*modifier)
 
 if __name__ == "__main__":
 	rospy.init_node("navnode2")
