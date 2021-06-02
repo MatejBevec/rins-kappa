@@ -212,8 +212,8 @@ class Agent():
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
 
-		self.faces = face_ring_f.get_final_face_detections()
-		print(self.faces)
+		#self.faces = face_ring_f.get_final_face_detections()
+		#print(self.faces)
 		# self.rings = face_ring_f.get_final_ring_detections()
 		# print(self.rings)
 		# --> TODO: integrate
@@ -223,7 +223,8 @@ class Agent():
 
 		for pair in self.unsafe_pairs:
 			i,j = pair[0], pair[1]
-			name_i, name_j = self.faces[i]["name"], self.faces[j]["name"]
+			#name_i, name_j = self.faces[i]["name"], self.faces[j]["name"]
+			name_i, name_j = f"face {i}", f"face {j}"
 			print(f"{name_i} and {name_j} are too close ({pair[2]:.1f}m).")
 
 			wall_between = pair[3]
@@ -248,18 +249,46 @@ class Agent():
 
 	def approach_one_face(self, i, appr, arm_mover, qr_extr):
 		face = self.faces[i]
-		print("Approaching " + face["name"] + ".")
+		#name = face["name"]
+		name = f"face {i}"
+		print("Approaching " + name + ".")
 		pos = face["position"]
-		appr.approachnew(pos.x, pos.y, "cylinder")
+		appr.approachnew(pos.x, pos.y, "obraz")
 		appr.leftRight(20)
 		data = qr_extr.getLastDetected()
 		self.faces[i]["info"] = data
 
-		self.print_message("yellow", f"HELLO, {face['name']}")
+		self.print_message("yellow", f"HELLO, {name}")
 		print("Info about face:")
 		print(data)
 
-		arm_mover.extend_retract()
+		# CHECK FOR DETECTED DIGITS AND MASK OR USE QR VALUES
+
+		det_digit = None
+		#det_digit = = qr_extr.getLastDigit()
+		if det_digit:
+			self.print_message("white", "Using DETECTED DIGIT for age.")
+			self.faces[i]["info"]["age"] = det_digit
+		else:
+			self.print_message("white", "No digit detection, using QR info for age.")
+
+		if "mask" in self.faces[i]:
+			self.print_message("white", "Using DETECTED value for hasMask.")
+			self.faces[i]["info"]["hasMask"] = self.faces[i]["mask"]
+		else:
+			self.print_message("white", "No detection for hasMask, using value from QR.")
+
+		has_mask = self.faces[i]["info"]["hasMask"]
+		is_vaccinated = self.faces[i]["info"]["isVaccinated"]
+		if (not has_mask):
+			if (not is_vaccinated):
+				self.print_message("red", "WARNING: YOU SHOULD WEAR A MASK!")
+			else:
+				self.print_message("green", "NO MASK BUT VACCINATED")
+		else:
+			self.print_message("green", "THANK YOU FOR WEARING A MASK")
+
+		#arm_mover.extend_retract()
 		appr.moveBackType("cylinder")
 
 	def approach_one_cylinder(self, color, appr, arm_mover, qr_extr):
@@ -269,6 +298,16 @@ class Agent():
 		#appr.leftRight(20)
 		#dataset = qr_extr.getLastDataset()
 		self.print_message(color, f"HELLO, {color} doctor.")
+
+		# GET VACCINE CLASSIFICATION OR USE VALUE FROM QR
+		cls_vaccine = None
+		#cls_vaccine = qr_extr.getLastClassifedVaccine # [TODO]
+		if cls_vaccine:
+			self.print_message("white", "Using CLASSIFIED color of vaccine.")
+			self.faces[i]["info"]["vaccine"] = self.faces[i]["mask"]
+		else:
+			self.print_message("white", "No classification of vaccine, using value from QR.")
+
 		appr.moveBackType("cylinder")
 
 	def approach_one_ring(self, color, appr, arm_mover):
@@ -277,6 +316,43 @@ class Agent():
 		appr.approachnew(pos.x, pos.y, "cylinder")
 		self.print_message("yellow", f"PICKING UP {color} vaccine.")
 		arm_mover.extend_retract()
+
+	def vaccinate_one_face(self, i, appr, arm_mover, qr_extr):
+		face = self.faces[i]
+		#name = face["name"]
+		name = f"face {i}"
+		print("Approaching " + name + ".")
+		pos = face["position"]
+		appr.approachnew(pos.x, pos.y, "obraz")
+		self.print_message("yellow", f"GIVING {face['info']['vaccine']} VACCINE TO {name}")
+		arm_mover.extend_retract()
+		appr.moveBackType("cylinder")
+
+	def approach_loop(self, i, appr, arm_mover, qr_extr):
+		# VISIT ONE FACE, CYLINDER AND RING
+		self.approach_one_face(i, appr, arm_mover, qr_extr) # <=============
+
+		if self.faces[i]["info"]["isVaccinated"]:
+			self.print_message("green", "THIS PERSON HAS BEEN VACCINATED ALREADY, MOVING ON...")
+			return True
+
+		next_cyl = self.faces[i]["info"]["doctor"] if self.faces[i]["info"] else None
+		if not next_cyl:
+			print("Doctor not known!")
+			return False
+
+		self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr) # <=============
+
+		next_ring = self.faces[i]["info"]["vaccine"] if self.faces[i]["info"] else None
+		if not next_ring:
+			print("Vaccine not known!")
+			return False
+
+		self.approach_one_ring(next_ring, appr, arm_mover) # <=============
+
+		self.vaccinate_one_face(i, appr, arm_mover, qr_extr) # <=============
+
+		return True
 
 
 	# MAIN RUNTIME FUNCTION
@@ -291,7 +367,7 @@ class Agent():
 		cylinder_f = CylinderFilter()
 		face_ring_f = FaceRingWrapper()
 
-		#self.explore_step(cylinder_f, face_ring_f)  # <------
+		#self.explore_step(cylinder_f, face_ring_f)  # <=============
 
 		cylinder_f.disable()
 		face_ring_f.disable()
@@ -303,24 +379,21 @@ class Agent():
 		qr_extr = QRExtractor()
 		#qr_extr.visualize = True
 
-		self.warning_step(appr)  # <------
+		self.warning_step(appr)  # <=============
+
+		failed_faces = [] #indices for faces where there was an error, to try again
 
 		for i in range(0, len(self.faces)):
-			self.approach_one_face(i, appr, arm_mover, qr_extr)  # <------
 
-			next_cyl = self.faces[i]["info"]["doctor"] if self.faces[i]["info"] else None
-			if not next_cyl:
-				print("Doctor not known, next face.")
-				continue;
+			ret = self.approach_loop(i, appr, arm_mover, qr_extr) # <=============
 
-			self.approach_one_cylinder(next_cyl, appr, arm_mover, qr_extr)  # <------
+			if not ret:
+				print_message("red", "THERE WAS A PROBLEM, WILL TRY THIS FACE AGAIN LATER")
+				continue
+			print(f"Approach loop for face {i} was successful.")
 
-			next_ring = self.faces[i]["info"]["vaccine"] if self.faces[i]["info"] else None
-			if not next_ring:
-				print("Vaccine not known, next face.")
-				continue;
-
-			self.approach_one_ring(next_ring, appr, arm_mover)  # <------
+		for i in failed_faces:
+			print(f"Trying face {i} again.")
 
 		print("All done")
 
