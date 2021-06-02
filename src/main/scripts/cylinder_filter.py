@@ -19,7 +19,7 @@ DIST_THR = 0.25
 NUM_THR = 4
 
 
-class CylinderFilter():
+class CylinderFilter:
 
     # detection = {
     #     "data": Detection.msg: {position, num_detections, red, green, blue},
@@ -30,8 +30,8 @@ class CylinderFilter():
     #     }
 
     def __init__(self):
-        self.detections = [] #dicts for all detections
-        self.true_detections = [] #only verified detections
+        self.detections = []  # dicts for all detections
+        self.true_detections = []  # only verified detections
         #-> currently done with get_true_detections
 
         if __name__ == "__main__":
@@ -50,26 +50,26 @@ class CylinderFilter():
 
     def hsv_hist(self, img, bins):
         img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-        mask = img_hsv[:,:,1] > 30 # ONLY KEEP PIXELS THAT ARE NOT COMPLETELY DESATURATED
-        h,bins = np.histogram(img_hsv[:,:,0][mask].ravel(), bins, [0,256])
-        s,bins = np.histogram(img_hsv[:,:,1][mask].ravel(), bins, [0,256])
-        v,bins = np.histogram(img_hsv[:,:,2][mask].ravel(), bins, [0,256])
+        mask = img_hsv[:, :, 1] > 30  # ONLY KEEP PIXELS THAT ARE NOT COMPLETELY DESATURATED
+        h,bins = np.histogram(img_hsv[:, :, 0][mask].ravel(), bins, [0, 256])
+        s,bins = np.histogram(img_hsv[:, :, 1][mask].ravel(), bins, [0, 256])
+        v,bins = np.histogram(img_hsv[:, :, 2][mask].ravel(), bins, [0, 256])
 
         return np.concatenate([h,s,v], axis=0)
 
     def data_to_hist(self, data):
         n = len(data.red)
-        img = np.zeros([1,n,3], dtype='uint8')
-        img[0,:,0] = np.array(list(data.red), dtype='uint8')
-        img[0,:,1] = np.array(list(data.green), dtype='uint8')
-        img[0,:,2] = np.array(list(data.blue), dtype='uint8')
+        img = np.zeros([1, n, 3], dtype='uint8')
+        img[0, :, 0] = np.array(list(data.red), dtype='uint8')
+        img[0, :, 1] = np.array(list(data.green), dtype='uint8')
+        img[0, :, 2] = np.array(list(data.blue), dtype='uint8')
         # TODO: MASK OUT DESATURATED PIXELS
 
         hist = self.hsv_hist(img, 10)
         return hist, img
 
     def show_images(self, detections):
-        fig = plt.figure(figsize=(4,16))
+        fig = plt.figure(figsize=(4, 16))
         n = len(detections)
         for i in range(0,n):
             fig.add_subplot(2*n, 1, 2*i+1)
@@ -91,7 +91,7 @@ class CylinderFilter():
         print("---------------------------\n\n")
 
     def classify_color_mini(self, histogram):
-            hist = np.array(histogram) #requires 10bit/channel hsv hist
+            hist = np.array(histogram)  # requires 10bit/channel hsv hist
             colors = ["red", "yellow", "green", "blue"]
             sums = [np.sum(hist[0:1]), np.sum(hist[1:2]), np.sum(hist[2:4]), np.sum(hist[3:6])]# <----
             #print(sums)
@@ -137,7 +137,7 @@ class CylinderFilter():
                     self.print_positions(true_det)
                     self.pub_markers(true_det)
                     #self.show_images(true_det)
-                return;
+                return
 
         # if detection is new
         hist, img = self.data_to_hist(data) #idk if this goes here or on confirm
@@ -165,7 +165,6 @@ class CylinderFilter():
         sort_by = lambda d: d["num_detects"]
         temp = sorted(self.detections, key=sort_by, reverse=True)
         return temp[0:n]
-
 
     def pub_markers(self, detections):
         markers = MarkerArray()
@@ -207,6 +206,7 @@ class CylinderFilter():
 
     def spin(self):
         rospy.spin()
+
 
 if __name__ == "__main__":
     cf = CylinderFilter()
