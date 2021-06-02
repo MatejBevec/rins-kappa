@@ -235,10 +235,10 @@ class Agent():
 			name_i, name_j = f"face {i}", f"face {j}"
 			print(f"{name_i} and {name_j} are too close ({pair[2]:.1f}m).")
 
-			wall_between = pair[3]
-			if wall_between:
-				self.print_message("yellow", f"{name_i} AND {name_j} ARE SAFE - THERE IS A WALL BETWEEN THEM")
-				continue
+			#wall_between = pair[3]
+			#if wall_between:
+			#	self.print_message("yellow", f"{name_i} AND {name_j} ARE SAFE - THERE IS A WALL BETWEEN THEM")
+			#	continue
 
 			print(f"Going to warn {name_i} and {name_j}")
 			mid_x, mid_y = self.face_pair_midpoint(i,j)
@@ -263,6 +263,7 @@ class Agent():
 		pos = face["position"]
 		appr.approachnew(pos.x, pos.y, "obraz")
 		self.print_message("yellow", f"HELLO, {name}")
+		appr.moveForward(0.1)
 		appr.leftRight(20)
 		data = qr_extr.getLastDetected()
 		self.faces[i]["info"] = data
@@ -334,6 +335,7 @@ class Agent():
 		pos = face["position"]
 		appr.approachnew(pos.x, pos.y, "obraz")
 		self.print_message(color, f"GIVING {face['info']['vaccine']} VACCINE TO {name}")
+		appr.moveForward(0.15)
 		arm_mover.extend_retract()
 		appr.moveBackType("cylinder")
 

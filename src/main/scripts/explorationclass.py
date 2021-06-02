@@ -160,7 +160,7 @@ class explorer():
 			print("Goal reached")
 		else:
 			print("Unable to reach goal, moving on")
-			moveBack(0.3)
+			self.moveBack(0.3)
 			return False
 			
 		
@@ -257,7 +257,7 @@ class explorer():
 		goalscpy=goals.copy()
 		newgoals=[]
 		#print(goals)
-		while(len(goalscpy)>0):
+		while(len(goalscpy)>1):
 			#find closest
 			minlen=999999
 			for i in goalscpy:
@@ -269,10 +269,10 @@ class explorer():
 			goalscpy.remove(current)
 			startx=current[0]
 			starty=current[1]
-		#zadna dva dodamo manually ce ne se zmede ko je samo left
-		#newgoals.append(goalscpy.pop(1))
-		#newgoals.append(goalscpy.pop(0))
-		#print("new goals:",newgoals)
+		#zadnega dodamo  manually
+		goal=goalscpy.pop(0)
+		newgoals.append([goal[0],goal[1]+0.2])
+		print("new goals:",newgoals)
 		return newgoals
 
 	def explore(self):
