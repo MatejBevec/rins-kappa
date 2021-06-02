@@ -62,6 +62,8 @@ class Agent():
 			(0, 0)
 			]
 
+		
+
 		self.cylinders = {}  # "color": position
 		self.rings = {}  # "color": position
 		self.faces = []  # faces[i]["position"], faces[i]["img"]
@@ -191,12 +193,12 @@ class Agent():
 		while self.mb_client.get_state() < 3:
 			print("moving ...");
 			self.mb_client.wait_for_result(rospy.Duration(1))
-			if(self.sleeper):
-				rospy.sleep(1)
+
 
 		if self.mb_client.get_state() == 3:
 			print("Goal reached")
-			
+			if(self.sleeper):
+				rospy.sleep(1)
 		else:
 			print("Unable to reach goal , moving on")
 
