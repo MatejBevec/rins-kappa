@@ -205,10 +205,13 @@ class explorer():
 		
 		for i in self.points:
 			if self.checkGoal(0,0,i[0],i[1])!=[]:
+			
 				test=self.moveTo(i[0],i[1])
 				if(test==False):
 					#try again
 					self.moveTo(i[0],i[1])
+				if(self.getDist(0,-0.3,i[0],i[1])>3.3):
+					self.rotateFor(345,0.85)
 				if(self.rotate):
 					rotateFor(345,1)
 			else:
@@ -271,7 +274,7 @@ class explorer():
 			starty=current[1]
 		#zadnega dodamo  manually
 		goal=goalscpy.pop(0)
-		newgoals.append([goal[0],goal[1]+0.2])
+		newgoals.append([goal[0],goal[1]+0.33])
 		print("new goals:",newgoals)
 		return newgoals
 
