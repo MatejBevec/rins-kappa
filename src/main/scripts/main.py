@@ -93,11 +93,11 @@ class Agent():
 			"blue": Point(2.9, -1.6, 1)
 		}
 
-		self.test_faces = [
-			{"position": Point(1.55, 2.65, 0.5), "name": "bluemask"},
-			{"position": Point(2.47, 2.6, 0.5), "name": "gargamel"},
+		self.test_faces = [		
 			{"position": Point(0.78, 0.61, 0.5), "name": "greenmask"},
-			{"position": Point(-0.32, -1.96, 0.5), "name": "nomask_girl"}
+			{"position": Point(1.55, 2.65, 0.5), "name": "bluemask"},
+			{"position": Point(-0.32, -1.96, 0.5), "name": "nomask_girl"},
+			{"position": Point(2.47, 2.6, 0.5), "name": "gargamel"}
 		]
 
 		self.SAFE_DIST = 2  # safe distance for social distancing
@@ -235,10 +235,11 @@ class Agent():
 			name_i, name_j = f"face {i}", f"face {j}"
 			print(f"{name_i} and {name_j} are too close ({pair[2]:.1f}m).")
 
-			#wall_between = pair[3]
-			#if wall_between:
-			#	self.print_message("yellow", f"{name_i} AND {name_j} ARE SAFE - THERE IS A WALL BETWEEN THEM")
-			#	continue
+			if self.CHECK_WALL:
+				wall_between = pair[3]
+				if wall_between:
+					self.print_message("yellow", f"{name_i} AND {name_j} ARE SAFE - THERE IS A WALL BETWEEN THEM")
+					continue
 
 			print(f"Going to warn {name_i} and {name_j}")
 			mid_x, mid_y = self.face_pair_midpoint(i,j)
@@ -256,6 +257,9 @@ class Agent():
 			appr.moveBackType("cylinder")
 
 	def approach_one_face(self, i, appr, arm_mover, qr_extr):
+		if self.DETECT_DIGITS:
+			qr_extr.detect_digits = True
+
 		face = self.faces[i]
 		#name = face["name"]
 		name = f"face {i}"
@@ -264,7 +268,7 @@ class Agent():
 		appr.approachnew(pos.x, pos.y, "obraz")
 		self.print_message("yellow", f"HELLO, {name}")
 		appr.moveForward(0.1)
-		appr.leftRight(20)
+		appr.leftRight(25)
 		data = qr_extr.getLastDetected()
 		self.faces[i]["info"] = data
 
@@ -274,15 +278,16 @@ class Agent():
 		# CHECK FOR DETECTED DIGITS AND MASK OR USE QR VALUES
 
 		det_digit = None
-		#det_digit = = qr_extr.getLastNumber()
+		if self.DETECT_DIGITS:
+			det_digit = qr_extr.getLastNumber()
 		if det_digit:
-			self.print_message("white", "Using DETECTED DIGIT for age.")
+			self.print_message("yellow", f"Using DETECTED DIGIT {det_digit} for age.")
 			self.faces[i]["info"]["age"] = det_digit
 		else:
 			self.print_message("white", "No digit detection, using QR info for age.")
 
 		if "mask" in self.faces[i]:
-			self.print_message("white", "Using DETECTED value for hasMask.")
+			self.print_message("yellow", "Using DETECTED value for hasMask.")
 			self.faces[i]["info"]["hasMask"] = self.faces[i]["mask"]
 		else:
 			self.print_message("white", "No detection for hasMask, using value from QR.")
@@ -299,6 +304,7 @@ class Agent():
 
 		#arm_mover.extend_retract()
 		appr.moveBackType("cylinder")
+		qr_extr.detect_digits = False
 
 	def approach_one_cylinder(self, color, appr, arm_mover, qr_extr):
 		pos = self.cylinders[color]
@@ -368,9 +374,12 @@ class Agent():
 
 	# MAIN RUNTIME FUNCTION
 	def runtime(self):
-		self.faces = self.test_faces
-		self.cylinders = self.test_cylinders
-		self.rings = self.test_rings
+		#self.faces = self.test_faces
+		#self.cylinders = self.test_cylinders
+		#self.rings = self.test_rings
+		self.CHECK_WALL = False#whether to check for wall between faces
+		self.DETECT_DIGITS = True
+		self.CLASSIFY_VACCINE = False
 
 		# SHADOWS OFF IN GAZEBO!
 
@@ -378,7 +387,7 @@ class Agent():
 		cylinder_f = CylinderFilter()
 		face_ring_f = FaceRingWrapper()
 
-		self.explore_step(cylinder_f, face_ring_f)  # <=============
+		#self.explore_step(cylinder_f, face_ring_f)  # <=============
 
 		cylinder_f.disable()
 		face_ring_f.disable()
