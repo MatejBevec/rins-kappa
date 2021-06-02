@@ -432,7 +432,7 @@ class Agent():
 
 		cylinder_f.disable()
 		face_ring_f.disable()
-		self.kill_nodes(["cylinder_segmentation", "face_localizer", "face_detector_node", "ring_detector"])
+		self.kill_nodes(["cylinder_segmentation", "face_localizer_dlib_new", "face_detector_node", "ring_detector"])
 
 		# BACKUP
 		num_obj = 4
