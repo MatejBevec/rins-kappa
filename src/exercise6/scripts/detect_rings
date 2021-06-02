@@ -302,7 +302,7 @@ class The_Ring:
             if not was_err:
                 self.detection_buffer.add(new_marker)
 
-            if len(self.images) >= 5 and not was_err:
+            if len(self.images) >= 3 and not was_err:
                 all_imgs = []
                 for some_iamge in self.images:
                     img = cv2.imread(some_iamge, cv2.IMREAD_COLOR)
