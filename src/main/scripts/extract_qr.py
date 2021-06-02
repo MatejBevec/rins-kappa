@@ -46,7 +46,9 @@ class QRExtractor:
 
 		self.lastDetected={}  # info from last face qr code
 		self.lastDataset=[]  # info from last cylinder qr code
-		self.lastNumber=0
+		self.lastNumber=0 # info from last number 
+		
+		self.numberAge=0
 
 	def disable(self):
 		self.image_sub.unregister()
@@ -195,12 +197,17 @@ class QRExtractor:
 
 				# Check and extract data from text
 				#print('Extracted>>',text)
-
+				text=text.strip()
 				if(text.isnumeric()):
 					self.lastNumber=int(text)
+					self.numberAge=rospy.get_rostime()
 					print(self.lastNumber)
+					print("time of detection:",self.numberAge)
 				else:
+					print("not numeric",text)
 					print(text)
+					print(type(text))
+					print(len(text))
 				# Remove any whitespaces from the left and right
 				text = text.strip()
 
