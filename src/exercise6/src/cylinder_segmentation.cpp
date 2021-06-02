@@ -160,9 +160,9 @@ cloud_cb (const pcl::PCLPointCloud2ConstPtr& cloud_blob)
   extract.setNegative (false);
   pcl::PointCloud<PointXYZRGB>::Ptr cloud_cylinder (new pcl::PointCloud<PointXYZRGB> ());
   extract.filter (*cloud_cylinder);
-  int NUM_POINTS_THR = 180 //40 10
-  if (cloud_cylinder->points.empty() || cloud_cylinder->points.size() < NUM_POINTS_THR){ 
-    std::cerr << "Can't find the cylindrical component." << std::endl;
+  int NUM_POINTS_THR = 180; //40 10
+  if (cloud_cylinder->points.empty() || cloud_cylinder->points.size() < NUM_POINTS_THR){
+    std::cerr << "Can't find the cylindrical component." <<g std::endl;
     //printf("         no cylinder          \n");
   }
   else

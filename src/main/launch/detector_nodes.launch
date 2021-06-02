@@ -4,6 +4,7 @@
 
   <node pkg="exercise6" type="face_localizer_dlib" name="face_localizer_dlib"/>
   <node pkg="exercise6" type="face_detector_node" name="face_detector_node"/>
+  <node pkg="exercise6" type="detect_rings" name="ring_detector"/>
 
   <!-- TODO: ring detector -->
 

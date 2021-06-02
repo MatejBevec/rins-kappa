@@ -48,15 +48,16 @@ class Agent():
 		self.mb_client.wait_for_server()
 
 		self.preset_goals = [
-			(-0.3, -1,6),
+			(-0.3, -1.6),
 			(2.25, -0.7),
 			(3.65, -1.23),
-			(2.55, 1.69),
+			(2.55, 1.60),
 			(1.12, -0.3),
 			(1.9, 2.1),
 			(-0.77, 1.2),
 			(-1.25, 1.6),
 			(-1.4, 0),
+			(-0.21, 0.71),
 			(0, 0)
 			]
 
@@ -78,18 +79,25 @@ class Agent():
 		p.x, p.y = -1.8, -0.12
 		self.test_cylinders["red"] = p
 
+		self.test_cylinders = {
+			"blue": Point(0.44, 0.82, 0.5),
+			"green": Point(-1.75, -0.29, 0.5),
+			"red": Point(1.1, -0.78, 0.5),
+			"yellow": Point(4, -1.3, 0.5)
+		}
+
 		self.test_rings = {
-			"green": Point(-1, 0.67, 1),
-			"black": Point(-0.15, 1.5, 1),
-			"red": Point(2.3, 1.3, 1),
-			"blue": Point(2.8, -1.6, 1)
+			"green": Point(-1.13, 0.71, 1),
+			"black": Point(1.6, 1.4, 1),
+			"red": Point(1.9, 1.7, 1),
+			"blue": Point(2.9, -1.6, 1)
 		}
 
 		self.test_faces = [
-			{"position": Point(1.35, 2.7, 0.5), "name": "bluemask"},
-			{"position": Point(0.74, 0.74, 0.5), "name": "gargamel"},
-			{"position": Point(4.1, -1, 0.5), "name": "greenmask"},
-			{"position": Point(0.43, -0.26, 0.5), "name": "nomask_girl"}
+			{"position": Point(1.55, 2.65, 0.5), "name": "bluemask"},
+			{"position": Point(2.47, 2.6, 0.5), "name": "gargamel"},
+			{"position": Point(0.78, 0.61, 0.5), "name": "greenmask"},
+			{"position": Point(-0.32, -1.96, 0.5), "name": "nomask_girl"}
 		]
 
 		self.SAFE_DIST = 2  # safe distance for social distancing
@@ -152,7 +160,7 @@ class Agent():
 			"green": "\u001b[32m",
 			"yellow": "\u001b[33m",
 			"blue": "\u001b[34m",
-			"black": "\u001b[37m",  #30
+			"black": "\u001b[33m",  #30
 			"white": "\u001b[37m"
 			}
 		print(">>>>>\n")
@@ -212,10 +220,10 @@ class Agent():
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
 
-		#self.faces = face_ring_f.get_final_face_detections()
-		#print(self.faces)
-		# self.rings = face_ring_f.get_final_ring_detections()
-		# print(self.rings)
+		self.faces = face_ring_f.get_final_face_detections()
+		print(self.faces)
+		self.rings = face_ring_f.get_final_ring_detections()
+		print(self.rings)
 		# --> TODO: integrate
 
 	def warning_step(self, appr):
@@ -254,11 +262,11 @@ class Agent():
 		print("Approaching " + name + ".")
 		pos = face["position"]
 		appr.approachnew(pos.x, pos.y, "obraz")
+		self.print_message("yellow", f"HELLO, {name}")
 		appr.leftRight(20)
 		data = qr_extr.getLastDetected()
 		self.faces[i]["info"] = data
 
-		self.print_message("yellow", f"HELLO, {name}")
 		print("Info about face:")
 		print(data)
 
@@ -314,7 +322,7 @@ class Agent():
 		pos = self.rings[color]
 		print(f"Approaching {color} vaccine.")
 		appr.approachnew(pos.x, pos.y, "cylinder")
-		self.print_message("yellow", f"PICKING UP {color} vaccine.")
+		self.print_message(color, f"PICKING UP {color} vaccine.")
 		arm_mover.extend_retract()
 
 	def vaccinate_one_face(self, i, appr, arm_mover, qr_extr):
@@ -324,7 +332,7 @@ class Agent():
 		print("Approaching " + name + ".")
 		pos = face["position"]
 		appr.approachnew(pos.x, pos.y, "obraz")
-		self.print_message("yellow", f"GIVING {face['info']['vaccine']} VACCINE TO {name}")
+		self.print_message(color, f"GIVING {face['info']['vaccine']} VACCINE TO {name}")
 		arm_mover.extend_retract()
 		appr.moveBackType("cylinder")
 
@@ -386,15 +394,29 @@ class Agent():
 
 		for i in range(0, len(self.faces)):
 
-			ret = self.approach_loop(i, appr, arm_mover, qr_extr) # <=============
+			ret = False
+			try:
+				ret = self.approach_loop(i, appr, arm_mover, qr_extr) # <=============
+			except Exception as e:
+				print(e)
 
 			if not ret:
 				print_message("red", "THERE WAS A PROBLEM, WILL TRY THIS FACE AGAIN LATER")
+				failed_faces.append(i)
 				continue
+
 			print(f"Approach loop for face {i} was successful.")
 
 		for i in failed_faces:
 			print(f"Trying face {i} again.")
+			ret = False
+			try:
+				ret = self.approach_loop(i, appr, arm_mover, qr_extr) # <=============
+			except Exception as e:
+				print(e)
+			if not ret:
+				print_message("red", "THERE WAS A PROBLEM AGAIN, NEXT FACE")
+				continue
 
 		print("All done")
 
