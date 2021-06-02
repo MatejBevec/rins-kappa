@@ -261,9 +261,9 @@ class Approacher():
 		return math.atan2(y, x)
 
 	def leftRight(self,deg):
-		self.rotateFor(-deg)
-		self.rotateFor(deg*2.3)
-		self.rotateFor(-deg)
+		self.rotateFor(deg)
+		self.rotateFor(-deg*2.3)
+		self.rotateFor(deg)
 		return
 
 	def checkwall(self,x1,y1,x2,y2,numberofpoints):

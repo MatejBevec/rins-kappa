@@ -77,7 +77,7 @@ class Agent():
 			(1.05,0.7,345), #obraz2
 			(1.44,2.23,110),#obraz3
 			(2.3,2.1,90),#obraz3
-			(0,2.5,100)#ring4	
+			(0,2.5,200)#ring4	
 		]
 
 
@@ -244,7 +244,7 @@ class Agent():
 			y = pos[1]
 			rot=pos[2]
 			self.move_base_to(x,y,rot)
-
+		rospy.sleep(1)
 		print("Finished moving")
 
 	def populate_detections(self):
@@ -309,7 +309,7 @@ class Agent():
 		appr.approachnew(pos.x, pos.y, "obraz")
 		self.print_message("yellow", f"HELLO, {name}")
 		appr.moveForward(0.1)
-		appr.leftRight(25)
+		appr.leftRight(27)
 		data = qr_extr.getLastDetected()
 		self.faces[i]["info"] = data
 
