@@ -48,6 +48,8 @@ class QRExtractor:
 		self.lastDataset=[]  # info from last cylinder qr code
 		self.lastNumber=0 # info from last number 
 		
+		self.ageQR=0
+		self.ageCyl=0
 		self.numberAge=0
 
 	def disable(self):
@@ -89,6 +91,7 @@ class QRExtractor:
 				dataset.append(newdata)
 			print(dataset)
 			self.lastDataset = dataset
+			self.ageCyl=rospy.get_rostime().secs
 		else:
 			#print("obraz")
 			#print(data)
@@ -104,21 +107,36 @@ class QRExtractor:
 
 			print(datadict)
 			self.lastDetected=datadict
+			self.ageQR=rospy.get_rostime().secs
 		return
 
 	def getLastDetected(self):
 		if self.visualize:
 			print(self.lastDetected)
+		if(abs(rospy.get_rostime().secs-self.ageQR)>10):
+			#ce je starejse od 10s
+			print("Qr code is too old. Try to detect again")
+			return None
 		return self.lastDetected
 
 	def getLastDataset(self):
 		if self.visualize:
 			print(self.lastDataset)
+		if(abs(rospy.get_rostime().secs-self.ageCyl)>10):
+			#ce je starejse od 10s
+			print("dataset is too old. Try to detect again")
+			return None
 		return self.lastDataset
 
 	def getLastNumber(self):
 		if self.visualize:
 			print(self.lastNumber)
+		
+		if(abs(rospy.get_rostime().secs-self.numberAge)>10):
+			#ce je starejse od 10s
+			print("number is too old. Try to detect again")
+			return None
+		
 		return self.lastNumber
 
 	def disable(self):
@@ -200,7 +218,7 @@ class QRExtractor:
 				text=text.strip()
 				if(text.isnumeric()):
 					self.lastNumber=int(text)
-					self.numberAge=rospy.get_rostime()
+					self.numberAge=rospy.get_rostime().secs
 					print(self.lastNumber)
 					print("time of detection:",self.numberAge)
 				else:
@@ -285,8 +303,8 @@ def main(args):
 	rate = rospy.Rate(1)
 	while not rospy.is_shutdown():
 		rate.sleep()
-		temp=qre.getLastDetected()
-		#print("temp",temp)
+		temp=qre.getLastDataset()
+		print("temp",temp)
 
 
 	cv2.destroyAllWindows()
