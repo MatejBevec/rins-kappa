@@ -31,7 +31,7 @@ import message_filters
   # 12 rospy.spin()
 
 
-class face_localizer:
+class FaceLocalizer:
     def __init__(self):
         rospy.init_node('face_localizer', anonymous=False)
 
@@ -94,7 +94,6 @@ class face_localizer:
 
         # TODO USE TRANFORM FROM TIME = stamp
 
-
         try:
             #point_world = self.tf_buf.transform(point_s, "map")
             print("finding transform")
@@ -121,11 +120,11 @@ class face_localizer:
             rgb_image_message = self.rgb_cache.getElemBeforeTime(rospy.Time.now())
             if not rgb_image_message:
                 print("No msg yet")
-                return 0
+                return
             rgb_stamp = rgb_image_message.header.stamp
         except Exception as e:
             print(e)
-            return 0
+            return
 
         try:
             #depth_image_message = rospy.wait_for_message("/camera/depth/image_raw", Image)
@@ -135,7 +134,7 @@ class face_localizer:
                 return 0
         except Exception as e:
             print(e)
-            return 0
+            return
 
         rgb_time = rgb_image_message.header.stamp
         depth_time = depth_image_message.header.stamp
@@ -239,7 +238,7 @@ class face_localizer:
 
 
 def main():
-    face_finder = face_localizer()
+    face_finder = FaceLocalizer()
 
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
