@@ -67,7 +67,7 @@ class FaceLocations:
         """
         marker_array = MarkerArray()
         marker_id = 1
-        marker_lifetime = 40 if len(self.proper_detections) < 3 else 200
+        marker_lifetime = 200
 
         for face, has_mask in self.proper_detections:
             pose = Pose()

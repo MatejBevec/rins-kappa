@@ -74,10 +74,10 @@ class Agent():
 			(3.6,-0.6,330),#&ring2
 			(1.1,-0.3,300),##cyl3 &
 			(1.1,-0.3,90),#& ring1
-			(1.05,1.05,0), #obraz2
+			(1.05,0.7,345), #obraz2
 			(1.44,2.23,110),#obraz3
 			(2.3,2.1,90),#obraz3
-			(0,2.5,220)#ring4	
+			(0,2.5,100)#ring4	
 		]
 
 
@@ -231,7 +231,7 @@ class Agent():
 			print("Goal reached")
 			
 			if(self.sleeper):
-				rospy.sleep(1)
+				rospy.sleep(2)
 		else:
 			print("Unable to reach goal , moving on")
 
