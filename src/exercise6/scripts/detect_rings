@@ -17,10 +17,12 @@ import copy
 from color_classify.classify import classify_wrapper
 import tempfile
 
+import message_filters
+
 
 class The_Ring:
     def __init__(self):
-        rospy.init_node('image_converter', anonymous=True)
+        rospy.init_node('ring_detector', anonymous=True)
 
         # An object we use for converting images between ROS format and OpenCV format
         self.bridge = CvBridge()
@@ -33,25 +35,27 @@ class The_Ring:
         self.marker_num = 1
 
         # Subscribe to the image and/or depth topic
-        self.image_sub = rospy.Subscriber("/camera/rgb/image_raw", Image, self.image_callback)
+        # self.image_sub = rospy.Subscriber("/camera/rgb/image_raw", Image, self.image_callback)
         # self.depth_sub = rospy.Subscriber("/camera/depth_registered/image_raw", Image, self.depth_callback)
 
+        # SYNCHRONIZED SUBSCRIBERS
+        self.rgb_sub = message_filters.Subscriber("/camera/rgb/image_raw", Image)
+        self.depth_sub = message_filters.Subscriber("/camera/depth/image_raw", Image)
+        self.rgb_cache = message_filters.Cache(self.rgb_sub, 100)
+        self.depth_cache = message_filters.Cache(self.depth_sub, 100)
+
         # Publiser for the visualization markers
-        self.markers_pub = rospy.Publisher('markers', MarkerArray, queue_size=1000)
+        self.markers_pub = rospy.Publisher('confirmed_rings', MarkerArray, queue_size=1000)
 
         # Object we use for transforming between coordinate frames
         self.tf_buf = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buf)
+
         self.images = []
         self.tempdir = None
 
-    def detection_log(message: str) -> None:
-        p = True
-        # p = False
-        if p:
-            print(f"FILTER {message}")
-
-    def get_pose(self, e, dist):
+    def get_pose(self, e, dist, stamp):
+        print(f"{e=}  {dist=}  {stamp=}")
         # Calculate the position of the detected ellipse
 
         k_f = 554  # kinect focal length in pixels
@@ -70,10 +74,11 @@ class The_Ring:
         point_s.point.y = 0
         point_s.point.z = x
         point_s.header.frame_id = "camera_rgb_optical_frame"
-        point_s.header.stamp = rospy.Time(0)
+        point_s.header.stamp = stamp
 
+        print(point_s)
         # Get the point in the "map" coordinate system
-        point_world = self.tf_buf.transform(point_s, "map")
+        point_world = self.tf_buf.transform_full(point_s, "map", stamp, "map")
         print(f"{point_world=}")
 
         # Create a Pose object with the same position
@@ -92,7 +97,7 @@ class The_Ring:
         marker.type = Marker.CUBE
         marker.action = Marker.ADD
         marker.frame_locked = False
-        marker.lifetime = rospy.Duration.from_sec(10)
+        marker.lifetime = rospy.Duration.from_sec(20)
         marker.id = self.marker_num
         marker.scale = Vector3(0.1, 0.1, 0.1)
         marker.color = ColorRGBA(0, 1, 0, 1)
@@ -100,9 +105,30 @@ class The_Ring:
 
         self.markers_pub.publish(self.marker_array)
 
-    def image_callback(self, data):
+    def image_callback(self):
+        # Get the next rgb and depth images that are posted from the camera
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            rgb_image_message = self.rgb_cache.getElemBeforeTime(rospy.Time.now())
+            if not rgb_image_message:
+                print("No msg yet")
+                return
+            rgb_stamp = rgb_image_message.header.stamp
+
+            depth_image_message = self.depth_cache.getElemBeforeTime(rgb_stamp)
+            if not depth_image_message:
+                print("No msg yet")
+                return
+        except Exception as e:
+            print(e)
+            return 0
+
+        rgb_time = rgb_image_message.header.stamp
+        depth_time = depth_image_message.header.stamp
+        rospy.loginfo(f"{rgb_time=} {depth_time=}")
+
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(rgb_image_message, "bgr8")
+            depth_image = self.bridge.imgmsg_to_cv2(depth_image_message, "32FC1")
         except CvBridgeError as e:
             print(e)
 
@@ -147,10 +173,10 @@ class The_Ring:
         # if len(candidates):
         #     print("Processing is done! found", len(candidates), "candidates for rings")
 
-        try:
-            depth_img = rospy.wait_for_message('/camera/depth/image_raw', Image)
-        except Exception as e:
-            print(e)
+        # try:
+        #     depth_img = rospy.wait_for_message('/camera/depth/image_raw', Image)
+        # except Exception as e:
+        #     print(e)
 
         okay = 0
         # Extract the depth from the depth image
@@ -176,7 +202,7 @@ class The_Ring:
             y_min = y1 if y1 > 0 else 0
             y_max = y2 if y2 < cv_image.shape[1] else cv_image.shape[1]
 
-            depth_image = self.bridge.imgmsg_to_cv2(depth_img, "32FC1")
+            # depth_image = self.bridge.imgmsg_to_cv2(depth_img, "32FC1")
             center = cv_image[(x_max-+x_min)//2, (y_max + y_min)//2, :]
             # print(center, np.sum(center) / 3)
             if not (160 < np.sum(center) / 3 < 185):
@@ -195,19 +221,24 @@ class The_Ring:
             y_min, y_max = min(yes), max(yes)
 
             # IZRAČUNAMO MARKER IN GA OBJAVIMO
-            self.get_pose(e1, float(np.mean(depth_image[x_min:x_max, y_min:y_max])))
-
             cutout = cv_image[x_min-2:x_max+2, y_min-2:y_max+2, :]
             depth_cutout = depth_image[x_min-2:x_max+2, y_min-2:y_max+2]
-            # where_nan = np.isnan(depth_cutout)
-            # depth_cutout[where_nan] = 0
-            # rospy.loginfo(np.max(depth_cutout))
-            # rospy.loginfo(np.min(depth_cutout))
             if depth_cutout[(x_max-x_min)//2, (y_max - y_min)//2] > -1:
                 rospy.loginfo("Fake loop :(")
                 continue
             okay += 1
-            # rospy.loginfo(depth_image[(x_max-+x_min)//2, (y_max + y_min)//2])
+
+            # where_nan = np.isnan(depth_image)
+            # depth_image[where_nan] = 0
+            try:
+                rospy.loginfo(f"{rgb_image_message.header.stamp=} {depth_image_message.header.stamp=}")
+                self.get_pose(
+                    e1,
+                    float(np.nanmean(depth_image[x_min:x_max, y_min:y_max])),
+                    depth_image_message.header.stamp
+                )
+            except tf2_ros.ExtrapolationException:
+
 
             # DOBIMO BARVO
             img_path = f"{rospy.get_time()}.jpg"
@@ -255,10 +286,12 @@ class The_Ring:
 def main():
     ring_finder = The_Ring()
 
-    try:
-        rospy.spin()
-    except KeyboardInterrupt:
-        print("Shutting down")
+    rate = rospy.Rate(1)
+    while not rospy.is_shutdown():
+        start = time.time()
+        ring_finder.image_callback()
+        # print(f"Needed {time.time() - start}s to execute that :)")
+        rate.sleep()
 
     cv2.destroyAllWindows()
 
