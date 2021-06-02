@@ -5,6 +5,7 @@ import math
 import rospy
 import actionlib
 import os
+import tf
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from geometry_msgs.msg import PoseStamped, Point
@@ -46,7 +47,7 @@ class Agent():
 		self.mb_client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
 		print("Waiting for move-base")
 		self.mb_client.wait_for_server()
-
+		
 		self.preset_goals = [
 			(-0.3, -1.6),
 			(2.25, -0.7),
@@ -64,18 +65,22 @@ class Agent():
 #		self.preset_goals = [(-0.17454545454545478, -1.2580000000000005), (-0.2763636363636366, 0.22699999999999987), (-1.4981818181818183, 0.12799999999999967), (-1.1927272727272729, 1.8604999999999998), (-0.6327272727272729, 1.7614999999999998), (1.4545454545454541, 2.2565), (2.574545454545454, 1.91), (2.3709090909090906, 0.3754999999999997), (2.727272727272727, -0.7135000000000002), (3.3381818181818175, -0.9115000000000002), (2.014545454545454, -1.4064999999999999), (1.149090909090909, 0.25999999999999973)]
 
 		self.preset_goals2 = [
-			(0,0.5),#cyl1
-			(-1.35,0),#cyl2
-			(-0.3, -1.47), #face1
-			(2.5,-1.5),#ring3
-			(3.6,-0.6),#cyl4&&ring2
-			(1.1,-0.3),##cyl3 && ring1
-			(1.17,1.15), #obraz2
-			(1.44,2.23),#obraz3
-			(2.18,2.18),#obraz3
-			(0,2.5)#ring4	
-		
+			(0,0.5,150),#cyl1
+			(-1.35,0,330),#cyl2
+			(-0.3, -1.47,270), #face1
+			(0,-1.35,60),#ring
+			(2.5,-1.5,70),#to sm zajebo ampak nej ostane
+			(3.6,-0.6,260),#cyl4&
+			(3.6,-0.6,330),#&ring2
+			(1.1,-0.3,300),##cyl3 &
+			(1.1,-0.3,90),#& ring1
+			(1.05,1.05,0), #obraz2
+			(1.44,2.23,110),#obraz3
+			(2.3,2.1,90),#obraz3
+			(0,2.5,220)#ring4	
 		]
+
+
 
 		self.preset_goals=self.preset_goals2
 
@@ -143,6 +148,12 @@ class Agent():
 
 	def distance(self, x1, y1, x2, y2):
 		return math.hypot(x1-x2, y1-y2)
+		
+		
+	def getangle(self,deg):
+		#mu das stopinje in on vrne kvaterion rotacije za ta kot
+		quat=tf.transformations.quaternion_from_euler(0,0,math.radians(deg))
+		return quat    
 
 	def get_unsafe_pairs(self, appr):
 		if len(self.faces) == 0:
@@ -190,14 +201,20 @@ class Agent():
 		for name in node_names:
 			os.system("rosnode kill " + name)
 
-	def move_base_to(self, x, y):
+	def move_base_to(self, x, y,rot):
 		# send goal to move base and wait for arrival (blocking!)
 		# blocks and return True on reached goal and False on failure
+
+		targetquaterion=self.getangle(rot)
 
 		goal = MoveBaseGoal()
 		goal.target_pose.pose.position.x = x
 		goal.target_pose.pose.position.y = y
 		goal.target_pose.pose.orientation.w = 1
+		goal.target_pose.pose.orientation.w = targetquaterion[2]
+		goal.target_pose.pose.orientation.z = targetquaterion[3]
+		
+		
 
 		goal.target_pose.header.frame_id = "map"
 
@@ -212,6 +229,7 @@ class Agent():
 
 		if self.mb_client.get_state() == 3:
 			print("Goal reached")
+			
 			if(self.sleeper):
 				rospy.sleep(1)
 		else:
@@ -224,7 +242,8 @@ class Agent():
 		for pos in goals:
 			x = pos[0]
 			y = pos[1]
-			self.move_base_to(x,y)
+			rot=pos[2]
+			self.move_base_to(x,y,rot)
 
 		print("Finished moving")
 
