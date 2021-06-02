@@ -214,8 +214,8 @@ class Agent():
 
 		self.faces = face_ring_f.get_final_face_detections()
 		print(self.faces)
-		# self.rings = face_ring_f.get_final_ring_detections()
-		# print(self.rings)
+		self.rings = face_ring_f.get_final_ring_detections()
+		print(self.rings)
 		# --> TODO: integrate
 
 	def warning_step(self, appr):
