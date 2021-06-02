@@ -175,6 +175,7 @@ class Approacher():
 		self.client.send_goal(goal)
 		while self.client.get_state() < 3:
 			print("moving ...")
+			#print(".")
 			self.client.wait_for_result(rospy.Duration(1))
 
 		if self.client.get_state() == 3:
@@ -182,12 +183,12 @@ class Approacher():
 		else:
 			print("Unable to reach goal, moving on")
 
-		print("Reached",locx,"  ",locy)
+		print(f"Reached {locx:.2f}, {locy:.2f}")
 
 		return
 
 	def moveBetween(self,locx,locy,rotation=0):
-		
+
 		check=[]
 		check=self.checkGoal(0.0,0.0,locx,locy)
 		dist=0.6
@@ -231,25 +232,23 @@ class Approacher():
 		for i in range(8):
 			check=self.checkGoal(0.0,0.0,locx+ring1x[i],locy+ring1y[i])
 			if(check!=[]):
-			    print("goal",locx+ring1x[i]," ",locy+ring1y[i],"reachable")
+			    rospy.loginfo(f"goal {locx+ring1x[i]}, {locy+ring1y[i]} reachable")
 			    self.moveTo(locx+ring1x[i],locy+ring1y[i],rotations[i])
 			    if(i%2==1):
 			        modifier=modifier*1.4
 			    self.moveForward(0.1*modifier)
 			    rospy.sleep(1) #samo za test kasnej lahko damo vn
-			    if(tip=='cylinder'):
-			        #TODO integracija premikanje roke
-			        print("roka")
+
 			    self.moveBack(0.1*modifier)
 			    break
 			else:
-			    print("goal",locx+ring1x[i]," ",locy+ring1y[i],"unreachable")
+			    rospy.loginfo(f"goal {locx+ring1x[i]}, {locy+ring1y[i]} unreachable")
 
 
 		#self.moveTo(0,0,190)	#nazaj na zacetekzakomentiraj to ko bo konc testiranja
 
 
-		print("Done")
+		rospy.loginfo("Approaching done")
 
 
 
@@ -308,7 +307,7 @@ class Approacher():
 			if(check!=[]):
 				anglereachable.append(i*(360/numofangles))
 
-		print(anglereachable)
+		rospy.loginfo(anglereachable)
 		#print("new angle",(self.getavgAngle(anglereachable)+360)%360)
 
 
@@ -316,16 +315,16 @@ class Approacher():
 		#ce ni pogledamo povprecni kot kamor ne more prit
 		if(anglereachable!=[]):
 			avgangle=sum(anglereachable)/len(anglereachable)
-		print(avgangle)
+		rospy.loginfo(avgangle)
 		#just in case
 		avgangle=(avgangle)%360
 		#dejanski kot kam rabi it
-		print(avgangle)
+		rospy.loginfo(avgangle)
 
 
 		goalx=locx+distaway*math.cos(math.radians(avgangle))
 		goaly=locy+distaway*math.sin(math.radians(avgangle))
-		print(goalx,goaly)
+		rospy.loginfo(f"goal: {goalx}, {goaly}")
 		check=self.checkGoal(0.0,0.0,goalx,goaly)
 		if(check==[]):
 			avgangle=self.getavgAngle(anglereachable)
@@ -346,8 +345,8 @@ class Approacher():
 		if(tip=='cylinder'):
 			self.moveForward(0.15)
 			self.moveBack(0.15)
-			
-			
+
+
 
 		#ko pride do cilja pogleda malo naokoli da najde qr ce se ne bo klicalo iz kod drugot samo odzakomentiraj ta if
 		#if(tip=='obraz'):
@@ -357,7 +356,7 @@ class Approacher():
 		#self.moveTo(0,0,190)	#nazaj na zacetek TODO: zakomentiraj to ko bo konc testiranja
 
 
-		print("Done")
+		rospy.loginfo("Approaching done")
 
 	def moveBackType(self, tip):
 		modifier=1

@@ -83,7 +83,7 @@ class CylinderFilter():
         plt.show()
 
     def print_positions(self, detections):
-        print("\n\n Filtered detections: ")
+        print("\n\n Confirmed cylinders: ")
         for i,d in enumerate(detections):
             pos = d["data"].position
             col = d["color"] if d["color"] else ""
@@ -105,8 +105,8 @@ class CylinderFilter():
     def on_detect(self, data):
         now_sec = rospy.get_time()
         pos = data.position
-        #print("(%.2f, %.2f, %.2f) recieved at %.0f" % (pos.x, pos.y, pos.z, now_sec) )
-        #print(data.num_detections)
+        rospy.loginfo("(%.2f, %.2f, %.2f) recieved at %.0f" % (pos.x, pos.y, pos.z, now_sec) )
+        rospy.loginfo(data.num_detections)
 
         self.process_detection(data)
 

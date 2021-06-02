@@ -41,7 +41,8 @@ class Agent():
 		self.state = 0
 
 		#other
-		rospy.init_node("goals_mb_client")
+		rospy.init_node("goals_mb_client", log_level=rospy.WARN)
+
 		self.mb_client = actionlib.SimpleActionClient("move_base", MoveBaseAction)
 		print("Waiting for move-base")
 		self.mb_client.wait_for_server()
@@ -121,7 +122,7 @@ class Agent():
 			print("No faces detected yet.")
 			return
 
-		num_points = 5  #for checking wall between
+		num_points = 5 #for checking wall between
 		unsafe_pairs = []
 		for i in range(0, len(self.faces)):
 			for j in range(i+1, len(self.faces)):
@@ -211,10 +212,10 @@ class Agent():
 		self.cylinders = cylinder_f.get_final_detections()
 		print(self.cylinders)
 
-		self.faces = face_ring_f.get_final_face_detections()
-		print(self.faces)
-		self.rings = face_ring_f.get_final_ring_detections()
-		print(self.rings)
+		#self.faces = face_ring_f.get_final_face_detections()
+		#print(self.faces)
+		# self.rings = face_ring_f.get_final_ring_detections()
+		# print(self.rings)
 		# --> TODO: integrate
 
 	def warning_step(self, appr):
@@ -264,7 +265,7 @@ class Agent():
 		# CHECK FOR DETECTED DIGITS AND MASK OR USE QR VALUES
 
 		det_digit = None
-		#det_digit = = qr_extr.getLastDigit()
+		#det_digit = = qr_extr.getLastNumber()
 		if det_digit:
 			self.print_message("white", "Using DETECTED DIGIT for age.")
 			self.faces[i]["info"]["age"] = det_digit
@@ -376,6 +377,7 @@ class Agent():
 		appr = Approacher()
 		arm_mover = Arm_Mover()
 		qr_extr = QRExtractor()
+		qr_extr.detect_digits = False
 		#qr_extr.visualize = True
 
 		self.warning_step(appr)  # <=============

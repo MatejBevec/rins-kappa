@@ -21,16 +21,26 @@ class FaceRingWrapper:
         self.faces_sub.unregister()
         self.rings_sub.unregister()
 
+    def print_positions(self, detections, string):
+        #print("\n\n Confirmed cylinders: ")
+        print("\n\n" + string)
+        for i,d in enumerate(detections):
+            pos = d["position"]
+            col = d["color"] if d["color"] else ""
+            print("(%.2f, %.2f, %.2f) %s" % (pos.x, pos.y, pos.z, col))
+        print("---------------------------\n\n")
+
     def on_confirmed_face(self, data):
         self.faces = []
         for marker in data.markers:
             pos = marker.pose.position
-            print(f"Confirmed FACE detection at ({pos.x},{pos.y})")
+            #print(f"Confirmed FACE detection at ({pos.x},{pos.y})")
             face = {
                 "position": pos,
                 "mask": pos.y < 0.3
             }
             self.faces.append(face)
+        self.print_positions(self.faces, "Confirmed faces: ")
         #self.faces = latest_faces
 
     def color_to_string(self, color):
@@ -54,13 +64,13 @@ class FaceRingWrapper:
         for marker in data.markers:
             pos = marker.pose.position
             color = marker.color
-            print(f"Confirmed RING detection at ({pos.x},{pos.y})")
+            #print(f"Confirmed RING detection at ({pos.x},{pos.y})")
             ring = {
                 "position": pos,
                 "color": self.color_to_string(color)
             }
             self.rings.append(ring)
-        pass
+        self.print_positions(self.rings, "Confirmed rings: ")
 
     def get_final_face_detections(self):
         return self.faces
@@ -70,6 +80,6 @@ class FaceRingWrapper:
 
 
 if __name__ == "__main__":
-    rospy.init_node("face_filter", anonymous=False)
-    ff = FaceFilter()
+    rospy.init_node("face_ring_wrapper", anonymous=False)
+    ff = FaceRingWrapper()
     rospy.spin()
