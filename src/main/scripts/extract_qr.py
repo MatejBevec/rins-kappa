@@ -9,6 +9,8 @@ import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from std_msgs.msg import ColorRGBA
+import pytesseract
+
 
 import urllib.request
 import pyzbar.pyzbar as pyzbar
@@ -44,6 +46,7 @@ class QRExtractor:
 
 		self.lastDetected={}  # info from last face qr code
 		self.lastDataset=[]  # info from last cylinder qr code
+		self.lastNumber=0
 
 	def disable(self):
 		self.image_sub.unregister()
@@ -82,7 +85,7 @@ class QRExtractor:
 					"vaccine": self.parseColor( spplitinfo[2].strip() )
 				}
 				dataset.append(newdata)
-			#print(dataset)
+			print(dataset)
 			self.lastDataset = dataset
 		else:
 			#print("obraz")
@@ -97,7 +100,7 @@ class QRExtractor:
 				"vaccine": self.parseColor( info[5].strip() )
 			}
 
-			#print(datadict)
+			print(datadict)
 			self.lastDetected=datadict
 		return
 
@@ -111,6 +114,112 @@ class QRExtractor:
 			print(self.lastDataset)
 		return self.lastDataset
 
+	def getLastNumber(self):
+		if self.visualize:
+			print(self.lastNumber)
+		return self.lastNumber
+
+	def disable(self):
+		self.image_sub.unregister()
+
+	def findDigit(self,cv_image):
+		
+		corners, ids, rejected_corners = cv2.aruco.detectMarkers(cv_image,dictm,parameters=params)
+		    
+		# Increase proportionally if you want a larger image
+		image_size=(351,248,3)
+		marker_side=50
+
+		img_out = np.zeros(image_size, np.uint8)
+		out_pts = np.array([[marker_side/2,img_out.shape[0]-marker_side/2],
+				[img_out.shape[1]-marker_side/2,img_out.shape[0]-marker_side/2],
+				[marker_side/2,marker_side/2],
+				[img_out.shape[1]-marker_side/2,marker_side/2]])
+
+		src_points = np.zeros((4,2))
+		cens_mars = np.zeros((4,2))
+
+		if not ids is None:
+			if len(ids)==4:
+				print('4 Markers detected')
+			
+				for idx in ids:
+					# Calculate the center point of all markers
+					cors = np.squeeze(corners[idx[0]-1])
+					cen_mar = np.mean(cors,axis=0)
+					cens_mars[idx[0]-1]=cen_mar
+					cen_point = np.mean(cens_mars,axis=0)
+				
+				for coords in cens_mars:
+				#  Map the correct source points
+					if coords[0]<cen_point[0] and coords[1]<cen_point[1]:
+						src_points[2]=coords
+					elif coords[0]<cen_point[0] and coords[1]>cen_point[1]:
+						src_points[0]=coords
+					elif coords[0]>cen_point[0] and coords[1]<cen_point[1]:
+						src_points[3]=coords
+					else:
+						src_points[1]=coords
+
+				h, status = cv2.findHomography(src_points, out_pts)
+				img_out = cv2.warpPerspective(cv_image, h, (img_out.shape[1],img_out.shape[0]))
+				
+				################################################
+				#### Extraction of digits starts here
+				################################################
+				
+				# Cut out everything but the numbers
+				img_out = img_out[125:221,50:195,:]
+				
+				# Convert the image to grayscale
+				img_out = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
+				
+				# Option 1 - use ordinairy threshold the image to get a black and white image
+				#ret,img_out = cv2.threshold(img_out,100,255,0)
+
+				# Option 1 - use adaptive thresholding
+				img_out = cv2.adaptiveThreshold(img_out,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,5)
+				
+				# Use Otsu's thresholding
+				#ret,img_out = cv2.threshold(img_out,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+				
+				# Pass some options to tesseract
+				config = '--psm 13 outputbase nobatch digits'
+					
+				# Visualize the image we are passing to Tesseract
+				cv2.imshow('Warped image',img_out)
+				cv2.waitKey(1)
+			
+				# Extract text from image
+				text = pytesseract.image_to_string(img_out, config = config)
+
+				# Check and extract data from text
+				#print('Extracted>>',text)
+
+				if(text.isnumeric()):
+					self.lastNumber=int(text)
+					print(self.lastNumber)
+				else:
+					print(text)
+				# Remove any whitespaces from the left and right
+				text = text.strip()
+
+				# If the extracted text is of the right length
+				if len(text)==2:
+					x=int(text[0])
+					y=int(text[1])
+					print('The extracted datapoints are x=%d, y=%d' % (x,y))
+				else:
+					print('The extracted text has is of length %d. Aborting processing' % len(text))
+				
+			else:
+				print('The number of markers is not ok:',len(ids))
+		else:
+			print('No markers found')
+		
+		
+		return
+		
 
 	def image_callback(self,data):
 		# print('Iam here!')
@@ -120,7 +229,9 @@ class QRExtractor:
 		except CvBridgeError as e:
 			print(e)
 
-			# Find a QR code in the image
+		self.findDigit(cv_image)
+		
+		# Find a QR code in the image
 		decodedObjects = pyzbar.decode(cv_image)
 
 		#print(decodedObjects)
@@ -162,7 +273,7 @@ def main(args):
 
 	rospy.init_node('image_converter', anonymous=True)
 	qre = QRExtractor()
-	qre.visualize()
+	#qre.visualize()
 
 	rate = rospy.Rate(1)
 	while not rospy.is_shutdown():
