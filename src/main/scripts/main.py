@@ -327,6 +327,7 @@ class Agent():
 
 	def vaccinate_one_face(self, i, appr, arm_mover, qr_extr):
 		face = self.faces[i]
+		color = face["info"]["vaccine"]
 		#name = face["name"]
 		name = f"face {i}"
 		print("Approaching " + name + ".")
@@ -381,6 +382,17 @@ class Agent():
 		face_ring_f.disable()
 		self.kill_nodes(["cylinder_segmentation", "face_localizer", "face_detector_node", "ring_detector"])
 
+		# BACKUP
+		num_obj = 4
+		if (not self.faces) or (len(self.faces) < num_obj):
+			self.print_message("RED", "FACE detections not complete, using hardcoded value for demonstration.")
+		elif (not self.cylinders) or (len(self.cylinders) < num_obj):
+			self.print_message("RED", "CYLINDER detections not complete, using hardcoded value for demonstration.")
+		elif (not self.rings) or (len(self.rings) < num_obj):
+			self.print_message("RED", "RING detections not complete, using hardcoded value for demonstration.")
+		else:
+			print("All detections complete.\n")
+
 		# APPROACH PHASE CLASSES
 		appr = Approacher()
 		arm_mover = Arm_Mover()
@@ -401,7 +413,7 @@ class Agent():
 				print(e)
 
 			if not ret:
-				print_message("red", "THERE WAS A PROBLEM, WILL TRY THIS FACE AGAIN LATER")
+				self.print_message("red", "THERE WAS A PROBLEM, WILL TRY THIS FACE AGAIN LATER")
 				failed_faces.append(i)
 				continue
 
@@ -415,7 +427,7 @@ class Agent():
 			except Exception as e:
 				print(e)
 			if not ret:
-				print_message("red", "THERE WAS A PROBLEM AGAIN, NEXT FACE")
+				self.print_message("red", "THERE WAS A PROBLEM AGAIN, NEXT FACE")
 				continue
 
 		print("All done")

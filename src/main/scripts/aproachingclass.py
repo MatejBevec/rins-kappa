@@ -269,7 +269,7 @@ class Approacher():
 	def checkwall(self,x1,y1,x2,y2,numberofpoints):
 		m=(y2-y1)/(x2-x1)
 		b=y1-m*x1
-		print("enacba je y=",m,"*x+",b)
+		rospy.loginfo("enacba je y=",m,"*x+",b)
 		distx=x2-x1
 		disty=y2-y1
 
