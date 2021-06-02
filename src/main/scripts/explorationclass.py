@@ -203,7 +203,7 @@ class explorer():
 		for i in self.points:
 			if self.checkGoal(0,0,i[0],i[1])!=[]:
 				test=self.moveTo(i[0],i[1])
-				if(test=False):
+				if(test==False):
 					#try again
 					self.moveTo(i[0],i[1])
 				if(self.rotate):
@@ -218,7 +218,7 @@ class explorer():
 	def goToGoal(self,i):
 		if self.checkGoal(0,0,i[0],i[1])!=[]:
 			test=self.moveTo(i[0],i[1])
-			if(test=False):
+			if(test==False):
 				#try again
 				self.moveTo(i[0],i[1])
 			if(self.rotate):
