@@ -117,14 +117,14 @@ class explorer():
 		current_angle=0
 	  
 		while(current_angle<relative_angle):
-		    publishnavi.publish(msgTwist)
+		    self.publishnavi.publish(msgTwist)
 		    t1=rospy.Time.now().to_sec()
 		    current_angle=angular_speed*(t1-t0)
 		    
 		rospy.loginfo("Rotation ended")
 		
 		msgTwist.angular.z=0
-		publishnavi.publish(msgTwist)
+		self.publishnavi.publish(msgTwist)
 		
 		return
 
@@ -200,6 +200,9 @@ class explorer():
 	
 	def moveToAllGoals(self):
 		#dejansko poslji movements
+		
+		self.rotateFor(345,1)
+		
 		for i in self.points:
 			if self.checkGoal(0,0,i[0],i[1])!=[]:
 				test=self.moveTo(i[0],i[1])
@@ -210,7 +213,10 @@ class explorer():
 					rotateFor(345,1)
 			else:
 				print("something went wrong with: ",i)
+				return False
 		
+		self.rotateFor(345,1)
+		return True
 	
 	def getAllGoals(self):
 		return self.points
@@ -246,12 +252,12 @@ class explorer():
 		return newloc
 		
 	def sortgoals(self,goals):
-		startx=0
-		starty=0
+		startx=-0.2
+		starty=-0.6
 		goalscpy=goals.copy()
 		newgoals=[]
 		#print(goals)
-		while(len(goalscpy)>2):
+		while(len(goalscpy)>0):
 			#find closest
 			minlen=999999
 			for i in goalscpy:
@@ -264,8 +270,8 @@ class explorer():
 			startx=current[0]
 			starty=current[1]
 		#zadna dva dodamo manually ce ne se zmede ko je samo left
-		newgoals.append(goalscpy.pop(1))
-		newgoals.append(goalscpy.pop(0))
+		#newgoals.append(goalscpy.pop(1))
+		#newgoals.append(goalscpy.pop(0))
 		#print("new goals:",newgoals)
 		return newgoals
 
