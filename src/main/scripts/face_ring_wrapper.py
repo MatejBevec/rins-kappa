@@ -6,6 +6,7 @@ import actionlib
 import math
 
 from visualization_msgs.msg import Marker, MarkerArray
+from std_msgs.msg import ColorRGBA
 
 
 class FaceRingWrapper:
@@ -32,6 +33,22 @@ class FaceRingWrapper:
             self.faces.append(face)
         #self.faces = latest_faces
 
+    def color_to_string(self, color):
+        if color == ColorRGBA(1, 0, 0, 1):
+            return "red"
+        if color == ColorRGBA(0, 1, 0, 1):
+            return "green"
+        if color == ColorRGBA(0, 0, 1, 1):
+            return "blue"
+        if color == ColorRGBA(1, 1, 0, 1):
+            return "yellow"
+        if color == ColorRGBA(1, 1, 1, 1):
+            return "white"
+        if color == ColorRGBA(0, 0, 0, 1):
+            return "black"
+
+        return "red" #if all else fails
+
     def on_confirmed_ring(self, data):
         self.rings = []
         for marker in data.markers:
@@ -40,7 +57,7 @@ class FaceRingWrapper:
             print(f"Confirmed RING detection at ({pos.x},{pos.y})")
             ring = {
                 "position": pos,
-                "color": color
+                "color": self.color_to_string(color)
             }
             self.rings.append(ring)
         pass
