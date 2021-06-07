@@ -14,8 +14,6 @@ Launch core:
 
 3. `roslaunch turtlebot_rviz_launchers view_navigation.launch`
 
-   [todo] Launch vseh ostalih node-ov.
-
 Launch detectors:
   * All together: `roslaunch main detector_nodes.launch`
   * Separately:
@@ -24,6 +22,9 @@ Launch detectors:
     3. `rosrun exercise6 face_detector_node`
     4. `rosrun exercise6 detect_rings`
 
+Main node: `rosrun main main.py`
+
+All behaviour happens in `main.py -> Agent.runtime()`
 
 Params:
   * Cylinder detection:
